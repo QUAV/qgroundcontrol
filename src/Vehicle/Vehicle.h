@@ -263,6 +263,7 @@ public:
     Q_PROPERTY(Fact* percentRemaining   READ percentRemaining   CONSTANT)
     Q_PROPERTY(Fact* mahConsumed        READ mahConsumed        CONSTANT)
     Q_PROPERTY(Fact* current            READ current            CONSTANT)
+    Q_PROPERTY(Fact* current_generator  READ current_generator  CONSTANT)
     Q_PROPERTY(Fact* temperature        READ temperature        CONSTANT)
     Q_PROPERTY(Fact* cellCount          READ cellCount          CONSTANT)
     Q_PROPERTY(Fact* instantPower       READ instantPower       CONSTANT)
@@ -273,6 +274,7 @@ public:
     Fact* percentRemaining          (void) { return &_percentRemainingFact; }
     Fact* mahConsumed               (void) { return &_mahConsumedFact; }
     Fact* current                   (void) { return &_currentFact; }
+    Fact* current_generator         (void) { return &_currentgeneratorFact; }
     Fact* temperature               (void) { return &_temperatureFact; }
     Fact* cellCount                 (void) { return &_cellCountFact; }
     Fact* instantPower              (void) { return &_instantPowerFact; }
@@ -283,6 +285,7 @@ public:
     static const char* _percentRemainingFactName;
     static const char* _mahConsumedFactName;
     static const char* _currentFactName;
+    static const char* _currentgeneratorFactName;
     static const char* _temperatureFactName;
     static const char* _cellCountFactName;
     static const char* _instantPowerFactName;
@@ -295,6 +298,7 @@ public:
     static const int    _percentRemainingUnavailable;
     static const int    _mahConsumedUnavailable;
     static const int    _currentUnavailable;
+    static const int    _currentgeneratorUnavailable;
     static const double _temperatureUnavailable;
     static const int    _cellCountUnavailable;
     static const double _instantPowerUnavailable;
@@ -304,6 +308,7 @@ private:
     Fact            _percentRemainingFact;
     Fact            _mahConsumedFact;
     Fact            _currentFact;
+    Fact            _currentgeneratorFact;
     Fact            _temperatureFact;
     Fact            _cellCountFact;
     Fact            _instantPowerFact;
