@@ -1136,7 +1136,7 @@ void Vehicle::_handleAttitudeQuaternion(mavlink_message_t& message)
     // if repr_offset is valid, rotate attitude and rates
     if (repr_offset.norm() >= 0.5f) {
         quat = quat * repr_offset;
-        rates = repr_offset * rates; 
+        rates = repr_offset * rates;
     }
 
     float roll, pitch, yaw;
@@ -4172,6 +4172,9 @@ const char* VehicleBatteryFactGroup::_cellCountFactName =                   "cel
 const char* VehicleBatteryFactGroup::_instantPowerFactName =                "instantPower";
 const char* VehicleBatteryFactGroup::_timeRemainingFactName =               "timeRemaining";
 const char* VehicleBatteryFactGroup::_chargeStateFactName =                 "chargeState";
+const char* VehicleBatteryFactGroup::_currentrotorFactName =                "currentRotor";
+const char* VehicleBatteryFactGroup::_fuellevelFactName =                   "mlLeftTank";
+const char* VehicleBatteryFactGroup::_throttlepercentageFactName =          "percentThrottle";
 
 const char* VehicleBatteryFactGroup::_settingsGroup =                       "Vehicle.battery";
 
@@ -4183,6 +4186,9 @@ const int    VehicleBatteryFactGroup::_currentgeneratorUnavailable =  -1;
 const double VehicleBatteryFactGroup::_temperatureUnavailable =       -1.0;
 const int    VehicleBatteryFactGroup::_cellCountUnavailable =         -1.0;
 const double VehicleBatteryFactGroup::_instantPowerUnavailable =      -1.0;
+const double VehicleBatteryFactGroup::_currentrotorUnavailable =        -1;
+const double VehicleBatteryFactGroup::_fuellevelUnavailable =           -1;
+const double VehicleBatteryFactGroup::_throttlepercentageUnavailable =  -1;
 
 VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
     : FactGroup(1000, ":/json/Vehicle/BatteryFact.json", parent)
@@ -4196,6 +4202,9 @@ VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
     , _instantPowerFact             (0, _instantPowerFactName,              FactMetaData::valueTypeFloat)
     , _timeRemainingFact            (0, _timeRemainingFactName,             FactMetaData::valueTypeInt32)
     , _chargeStateFact              (0, _chargeStateFactName,               FactMetaData::valueTypeUint8)
+    , _currentrotorFact             (0, _currentrotorFactName,              FactMetaData::valueTypeFloat)
+    , _fuellevelFact                (0, _fuellevelFactName,                 FactMetaData::valueTypeInt32)
+    , _throttlepercentageFact       (0, _throttlepercentageFactName,        FactMetaData::valueTypeInt32)
 {
     _addFact(&_voltageFact,                 _voltageFactName);
     _addFact(&_percentRemainingFact,        _percentRemainingFactName);
@@ -4207,6 +4216,9 @@ VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
     _addFact(&_instantPowerFact,            _instantPowerFactName);
     _addFact(&_timeRemainingFact,           _timeRemainingFactName);
     _addFact(&_chargeStateFact,             _chargeStateFactName);
+    _addFact(&_currentrotorFact,            _currentrotorFactName);
+    _addFact(&_fuellevelFact,               _fuellevelFactName);
+    _addFact(&_throttlepercentageFact,      _throttlepercentageFactName);
 
     // Start out as not available
     _voltageFact.setRawValue            (_voltageUnavailable);
@@ -4217,6 +4229,9 @@ VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
     _temperatureFact.setRawValue        (_temperatureUnavailable);
     _cellCountFact.setRawValue          (_cellCountUnavailable);
     _instantPowerFact.setRawValue       (_instantPowerUnavailable);
+    _currentrotorFact.setRawValue       (_currentrotorUnavailable);
+    _fuellevelFact.setRawValue          (_fuellevelUnavailable);
+    _throttlepercentageFact.setRawValue (_throttlepercentageUnavailable);
 }
 
 const char* VehicleWindFactGroup::_directionFactName =      "direction";

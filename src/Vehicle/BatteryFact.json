@@ -4,7 +4,7 @@
     "shortDescription": "Voltage",
     "type":             "double",
     "decimalPlaces":    2,
-    "units":            "v"
+    "units":            "V"
 },
 {
     "name":             "percentRemaining",
@@ -19,13 +19,6 @@
     "type":             "int32",
      "decimalPlaces":    0,
      "units":            "mAh"
-},
-{
-    "name":             "current",
-    "shortDescription": "Current",
-    "type":             "float",
-    "decimalPlaces":    2,
-    "units":            "A"
 },
 {
     "name":             "temperature",
@@ -60,5 +53,38 @@
     "enumStrings":      "Low Battery State Not Provided,Normal Operation,Low Battery State,Critical Battery State,Emergency Battery State,Battery Failed,Battery Unhealthy",
     "enumValues":       "0,1,2,3,4,5,6",
     "decimalPlaces":    0
+},
+{
+    "name":             "current",
+    "shortDescription": "Current",
+    "type":             "float",
+    "decimalPlaces":    1,
+    "units":            "A"
+},
+{
+    "name":             "currentGen",
+    "shortDescription": "Current Generator",
+    "type":             "float",
+    "decimalPlaces":    1,
+    "units":            "A"
+},
+{
+    "name":             "currentRotor",
+    "shortDescription": "Current Rotor",
+    "type":             "float",
+    "decimalPlaces":    1,
+    "units":            "A"
+},
+{
+    "name":             "mlLeftTank",
+    "shortDescription": "Fuel Level",
+    "type":             "int32",
+    "units":            "ml"
+},
+{
+    "name":             "percentThrottle",
+    "shortDescription": "Throttle",
+    "type":             "int32",
+    "units":            "%"
 }
 ]

@@ -28,6 +28,9 @@ import QGroundControl.Palette       1.0
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.Vehicle       1.0
 
+import QtGraphicalEffects   1.0
+
+
 /// Flight Display View
 Item {
 
@@ -730,11 +733,13 @@ Item {
     //-- QH Instruments
     QHInstruments {
         id: qhinstruments
-        visible: _activeVehicle //Only visible when there is an active vehicle
-        anchors.rightMargin:  10
-        anchors.bottomMargin: 50
+
+        anchors.rightMargin: ScreenTools.defaultFontPixelWidth + _margins
+        anchors.bottomMargin: ScreenTools.toolbarHeight
+        anchors.topMargin: ScreenTools.defaultFontPixelHeight
         anchors.bottom: parent.bottom
         anchors.right: parent.right
+
     }
 
     //-- Airspace Indicator

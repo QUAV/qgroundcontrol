@@ -27,71 +27,34 @@ import QGroundControl.Vehicle       1.0
 
 ProgressBar {
 
-    id: qhprogressbar
+    function getCustomWindowWidth() {
+        // Don't allow instrument panel to chew more than 1/4 of full window
+        var defaultWidth = ScreenTools.defaultFontPixelWidth * 30
+        var maxWidth = mainWindow.width * 0.25
+        return Math.min(maxWidth, defaultWidth)
+    }
 
-    //Properties (variable)
-    property var valueType: ["normal", "warning", "critical"]
+    function getBarWidth() {
+
+        var defaultWidth = 20 * ScreenTools.smallFontPointSize
+        var maxWidth = getCustomWindowWidth()*0.32  //mainWindow.width * 0.07
+        return Math.min(maxWidth, defaultWidth)
+    }
 
     //Common position parameters
-    Layout.preferredHeight: 10
-    Layout.preferredWidth: 120
-                
+    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 0.5
+    Layout.preferredWidth: getBarWidth() //10 * ScreenTools.smallFontPointSize
+
     //Values and conditions need to be added especifically
-                
-    /*
-    Style and colors for the progress bar. When a value goes from normal to critical it will change color from green
-    to red and the bar will glow.
-    */
+
+
+    //Comon style for the background of the progress bars
     style: ProgressBarStyle{
-
         background: Rectangle {
-            radius: 1
-            color: "lightgrey"
-            implicitWidth: parent.Layout.preferredWidth
-            implicitHeight: parent.Layout.preferredHeight
-        }
-
-        progress: Rectangle {
-
-            color: {
-                if(qhprogressbar.valuetype !== null){
-                    if(qhprogressbar.valueType === "normal")
-                        return "green"
-                    if(qhprogressbar.valueType === "warning")
-                        return "orange"
-                }
-                return "red"
-            }
-
-            ColorAnimation on color {
-                running: qhprogressbar.valueType === "critical"
-                from: "red"
-                to: "lightgrey"
-                duration: 1000
-                loops: qhprogressbar.valueType === "critical" ? Animation.Infinite : 1
-            }
-
-            // Indeterminate animation by animating alternating stripes:
-            Item {
-                anchors.fill: parent
-                visible: indeterminate
-                clip: true
-                Row {
-                    Repeater {
-                        Rectangle {
-                            color: index % 2 ? "steelblue" : "lightsteelblue"
-                                width: 20 ; height: control.height
-                        }
-                        model: control.width / 20 + 2
-                    }
-                    
-                    XAnimator on x {
-                    from: 0 ; to: -40
-                    loops: Animation.Infinite
-                    running: indeterminate
-                    }
-                }
-            }
+          radius: 1
+          color: "lightgrey"
+          implicitWidth: parent.Layout.preferredWidth
+          implicitHeight: parent.Layout.preferredHeight
         }
     }
 }
