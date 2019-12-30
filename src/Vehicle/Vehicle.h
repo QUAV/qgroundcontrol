@@ -699,6 +699,8 @@ public:
     Q_PROPERTY(Fact* distanceToGCS      READ distanceToGCS      CONSTANT)
     Q_PROPERTY(Fact* hobbs              READ hobbs              CONSTANT)
     Q_PROPERTY(Fact* throttlePct        READ throttlePct        CONSTANT)
+    Q_PROPERTY(Fact* altitudeAGL        READ altitudeAGL        CONSTANT)
+
 
     Q_PROPERTY(FactGroup* gps               READ gpsFactGroup               CONSTANT)
     Q_PROPERTY(FactGroup* battery           READ battery1FactGroup          CONSTANT)
@@ -1002,6 +1004,7 @@ public:
     Fact* distanceToGCS     (void) { return &_distanceToGCSFact; }
     Fact* hobbs             (void) { return &_hobbsFact; }
     Fact* throttlePct       (void) { return &_throttlePctFact; }
+    Fact* altitudeAGL       (void) { return &_altitudeAGLFact; }
 
     FactGroup* gpsFactGroup             (void) { return &_gpsFactGroup; }
     FactGroup* battery1FactGroup        (void) { return &_battery1FactGroup; }
@@ -1307,6 +1310,7 @@ private:
     void _handleGpsRawInt(mavlink_message_t& message);
     void _handleGlobalPositionInt(mavlink_message_t& message);
     void _handleAltitude(mavlink_message_t& message);
+    void _handleTerrainReport(mavlink_message_t& message);
     void _handleVfrHud(mavlink_message_t& message);
     void _handleScaledPressure(mavlink_message_t& message);
     void _handleScaledPressure2(mavlink_message_t& message);
@@ -1566,6 +1570,7 @@ private:
     Fact _distanceToGCSFact;
     Fact _hobbsFact;
     Fact _throttlePctFact;
+    Fact _altitudeAGLFact;
 
     VehicleGPSFactGroup             _gpsFactGroup;
     VehicleBatteryFactGroup         _battery1FactGroup;
@@ -1597,6 +1602,7 @@ private:
     static const char* _distanceToGCSFactName;
     static const char* _hobbsFactName;
     static const char* _throttlePctFactName;
+    static const char* _altitudeAGLFactName;
 
     static const char* _gpsFactGroupName;
     static const char* _battery1FactGroupName;

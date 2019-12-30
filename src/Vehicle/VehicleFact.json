@@ -127,5 +127,12 @@
     "shortDescription": "Throttle %",
     "type":             "uint16",
     "units":            "%"
+},
+{
+    "name":             "altitudeAGL",
+    "shortDescription": "Alt (AGL)",
+    "type":             "double",
+    "decimalPlaces":    1,
+    "units":            "m"
 }
 ]

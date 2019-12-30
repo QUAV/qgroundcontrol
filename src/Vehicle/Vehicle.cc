@@ -81,6 +81,7 @@ const char* Vehicle::_headingToHomeFactName =       "headingToHome";
 const char* Vehicle::_distanceToGCSFactName =       "distanceToGCS";
 const char* Vehicle::_hobbsFactName =               "hobbs";
 const char* Vehicle::_throttlePctFactName =         "throttlePct";
+const char* Vehicle::_altitudeAGLFactName =         "altitudeAGL";
 
 const char* Vehicle::_gpsFactGroupName =                "gps";
 const char* Vehicle::_battery1FactGroupName =           "battery";
@@ -213,6 +214,8 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _distanceToGCSFact    (0, _distanceToGCSFactName,     FactMetaData::valueTypeDouble)
     , _hobbsFact            (0, _hobbsFactName,             FactMetaData::valueTypeString)
     , _throttlePctFact      (0, _throttlePctFactName,       FactMetaData::valueTypeUint16)
+    , _altitudeAGLFact      (0, _altitudeAGLFactName,       FactMetaData::valueTypeDouble)
+
     , _gpsFactGroup(this)
     , _battery1FactGroup(this)
     , _battery2FactGroup(this)
@@ -412,6 +415,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _distanceToGCSFact    (0, _distanceToGCSFactName,     FactMetaData::valueTypeDouble)
     , _hobbsFact            (0, _hobbsFactName,             FactMetaData::valueTypeString)
     , _throttlePctFact      (0, _throttlePctFactName,       FactMetaData::valueTypeUint16)
+    , _altitudeAGLFact      (0, _altitudeAGLFactName,       FactMetaData::valueTypeDouble)
     , _gpsFactGroup(this)
     , _battery1FactGroup(this)
     , _battery2FactGroup(this)
@@ -491,6 +495,7 @@ void Vehicle::_commonInit(void)
     _addFact(&_headingToHomeFact,       _headingToHomeFactName);
     _addFact(&_distanceToGCSFact,       _distanceToGCSFactName);
     _addFact(&_throttlePctFact,         _throttlePctFactName);
+    _addFact(&_altitudeAGLFact,        _altitudeAGLFactName);
 
     _hobbsFact.setRawValue(QVariant(QString("0000:00:00")));
     _addFact(&_hobbsFact,               _hobbsFactName);
@@ -763,6 +768,9 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
         break;
     case MAVLINK_MSG_ID_ALTITUDE:
         _handleAltitude(message);
+        break;
+    case MAVLINK_MSG_ID_TERRAIN_REPORT:
+        _handleTerrainReport(message);
         break;
     case MAVLINK_MSG_ID_VFR_HUD:
         _handleVfrHud(message);
@@ -1294,6 +1302,18 @@ void Vehicle::_handleAltitude(mavlink_message_t& message)
     }
 }
 
+void Vehicle::_handleTerrainReport(mavlink_message_t& message)
+{
+    mavlink_terrain_report_t terrain_report;
+    mavlink_msg_terrain_report_decode(&message, &terrain_report);
+
+    // If terrain data is available set AGL altitude
+    if(terrain_report.spacing != 0)
+        _altitudeAGLFact.setRawValue(terrain_report.current_height);
+    else
+        _altitudeAGLFact.setRawValue(-1);
+}
+
 void Vehicle::_setCapabilities(uint64_t capabilityBits)
 {
     _capabilityBits = capabilityBits;
@@ -1548,12 +1568,13 @@ void Vehicle::_handleSysStatus(mavlink_message_t& message)
     if (sysStatus.current_battery == -1) {
         _battery1FactGroup.current()->setRawValue(VehicleBatteryFactGroup::_currentUnavailable);
     } else {
-        // Current is in Amps, current_battery is 10 * milliamperes (1 = 10 milliampere)
+          // Current is in Amps, current_battery is 10 * milliamperes (1 = 10 milliampere)
         _battery1FactGroup.current()->setRawValue((float)sysStatus.current_battery / 100.0f);
     }
-    if (sysStatus.voltage_battery == UINT16_MAX) {
+    if (sysStatus.voltage_battery == UINT16_MAX ) {
         _battery1FactGroup.voltage()->setRawValue(VehicleBatteryFactGroup::_voltageUnavailable);
     } else {
+
         _battery1FactGroup.voltage()->setRawValue((double)sysStatus.voltage_battery / 1000.0);
         // current_battery is 10 mA and voltage_battery is 1mV. (10/1e3 times 1/1e3 = 1/1e5)
         _battery1FactGroup.instantPower()->setRawValue((float)(sysStatus.current_battery*sysStatus.voltage_battery)/(100000.0));
@@ -1615,12 +1636,29 @@ void Vehicle::_handleBatteryStatus(mavlink_message_t& message)
     }
 
 
-    if (bat_status.current_generator == INT16_MAX) {
+    if (bat_status.current_generator == -1) {
         batteryFactGroup.current_generator()->setRawValue(VehicleBatteryFactGroup::_currentgeneratorUnavailable);
     } else {
         batteryFactGroup.current_generator()->setRawValue((double)bat_status.current_generator / 100.0);
     }
 
+    if (bat_status.current_rotor == -1) {
+        batteryFactGroup.current_rotor()->setRawValue(VehicleBatteryFactGroup::_currentrotorUnavailable);
+    } else {
+        batteryFactGroup.current_rotor()->setRawValue((double)bat_status.current_rotor / 100.0);
+    }
+
+    if (bat_status.fuel_level == -1) {
+        batteryFactGroup.fuel_level()->setRawValue(VehicleBatteryFactGroup::_fuellevelUnavailable);
+    } else {
+        batteryFactGroup.fuel_level()->setRawValue((double)bat_status.fuel_level);
+    }
+
+    if (bat_status.throttle_percentage == -1) {
+        batteryFactGroup.throttle_percentage()->setRawValue(VehicleBatteryFactGroup::_throttlepercentageUnavailable);
+    } else {
+        batteryFactGroup.throttle_percentage()->setRawValue((double)bat_status.throttle_percentage);
+    }
 
     int cellCount = 0;
     for (int i=0; i<10; i++) {
@@ -4166,7 +4204,7 @@ const char* VehicleBatteryFactGroup::_voltageFactName =                     "vol
 const char* VehicleBatteryFactGroup::_percentRemainingFactName =            "percentRemaining";
 const char* VehicleBatteryFactGroup::_mahConsumedFactName =                 "mahConsumed";
 const char* VehicleBatteryFactGroup::_currentFactName =                     "current";
-const char* VehicleBatteryFactGroup::_currentgeneratorFactName =            "current gen";
+const char* VehicleBatteryFactGroup::_currentgeneratorFactName =            "currentGen";
 const char* VehicleBatteryFactGroup::_temperatureFactName =                 "temperature";
 const char* VehicleBatteryFactGroup::_cellCountFactName =                   "cellCount";
 const char* VehicleBatteryFactGroup::_instantPowerFactName =                "instantPower";
@@ -4186,7 +4224,7 @@ const int    VehicleBatteryFactGroup::_currentgeneratorUnavailable =  -1;
 const double VehicleBatteryFactGroup::_temperatureUnavailable =       -1.0;
 const int    VehicleBatteryFactGroup::_cellCountUnavailable =         -1.0;
 const double VehicleBatteryFactGroup::_instantPowerUnavailable =      -1.0;
-const double VehicleBatteryFactGroup::_currentrotorUnavailable =        -1;
+const double VehicleBatteryFactGroup::_currentrotorUnavailable =      -1;
 const double VehicleBatteryFactGroup::_fuellevelUnavailable =           -1;
 const double VehicleBatteryFactGroup::_throttlepercentageUnavailable =  -1;
 
