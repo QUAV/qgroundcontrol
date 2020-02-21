@@ -95,7 +95,7 @@ Rectangle { //Item
             QGCLabel {
                 Layout.column: 2
                 Layout.row: 1
-                text: (activeVehicle && activeVehicle.battery.voltage.value != -1) ? (activeVehicle.battery.voltage.valueString + " " + activeVehicle.battery.voltage.units) : "N/A"
+                text: (activeVehicle && activeVehicle.quaternium.voltage_battery.value != -1) ? (activeVehicle.quaternium.voltage_battery.valueString + " " + activeVehicle.quaternium.voltage_battery.units) : "N/A"
                   font.pointSize: ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
 
             }
@@ -147,8 +147,8 @@ Rectangle { //Item
 
                 //Values and conditions
                 maximumValue: 70    //Max current ever recorded in a peak was 55A
-                indeterminate: (activeVehicle && activeVehicle.battery.current.value !== -1) ? false : true
-                value: (activeVehicle && activeVehicle.battery.current.value !== -1) ? activeVehicle.battery.current.value : 0
+                indeterminate: (activeVehicle && activeVehicle.quaternium.current_battery.value !== -1) ? false : true
+                value: (activeVehicle && activeVehicle.quaternium.current_battery.value !== -1) ? activeVehicle.quaternium.current_battery.value : 0
 
                 style: ProgressBarStyle{
                     progress: Rectangle {
@@ -172,7 +172,7 @@ Rectangle { //Item
             QGCLabel {
                 Layout.column: 3
                 Layout.row: 2
-                text: (activeVehicle && activeVehicle.battery.current.value != -1) ? (activeVehicle.battery.current.valueString + " " + activeVehicle.battery.current.units) : "N/A"
+                text: (activeVehicle && activeVehicle.quaternium.current_battery.value != -1) ? (activeVehicle.quaternium.current_battery.valueString + " " + activeVehicle.quaternium.current_battery.units) : "N/A"
                 font.pointSize: ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
                 fontSizeMode:           Text.HorizontalFit
              }
@@ -196,8 +196,8 @@ Rectangle { //Item
 
                 //Values and conditions
                 maximumValue: 70    //Max current the generator produces is 50A
-                indeterminate: (activeVehicle && activeVehicle.battery.current_generator.value !== -1) ? false : true
-                value: (activeVehicle && activeVehicle.battery.current_generator.value !== -1) ? activeVehicle.battery.current_generator.value : 0
+                indeterminate: (activeVehicle && activeVehicle.quaternium.current_generator.value !== -1) ? false : true
+                value: (activeVehicle && activeVehicle.quaternium.current_generator.value !== -1) ? activeVehicle.quaternium.current_generator.value : 0
 
                 style: ProgressBarStyle{
                     background: Rectangle {
@@ -216,7 +216,7 @@ Rectangle { //Item
             QGCLabel {
                 Layout.column: 3
                 Layout.row: 3
-                text: (activeVehicle && activeVehicle.battery.current_generator.value != -1) ? (activeVehicle.battery.current_generator.valueString + " " + activeVehicle.battery.current_generator.units) : "N/A"
+                text: (activeVehicle && activeVehicle.quaternium.current_generator.value != -1) ? (activeVehicle.quaternium.current_generator.valueString + " " + activeVehicle.quaternium.current_generator.units) : "N/A"
                 font.pointSize: ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
              }
 
@@ -241,8 +241,8 @@ Rectangle { //Item
                 //Values and conditions
                 minimumValue: -70   //Current provided by governor to batteries is limited to 15A
                 maximumValue: 70    //Current provided by governor to batteries is limited to 15A
-                indeterminate: (activeVehicle && activeVehicle.battery.current_rotor.value !== -1) ? false : true
-                value: (activeVehicle && activeVehicle && activeVehicle.battery.current_rotor.value !== -1) ? activeVehicle.battery.current_rotor.value : 0
+                indeterminate: (activeVehicle && activeVehicle.quaternium.current_rotor.value !== -1) ? false : true
+                value: (activeVehicle && activeVehicle && activeVehicle.quaternium.current_rotor.value !== -1) ? activeVehicle.quaternium.current_rotor.value : 0
 
                 style: ProgressBarStyle{
                     background: Rectangle {
@@ -260,56 +260,13 @@ Rectangle { //Item
             QGCLabel {
                 Layout.column: 3
                 Layout.row: 5
-                text: (activeVehicle && activeVehicle.battery.current_rotor.value != -1) ? (activeVehicle.battery.current_rotor.valueString + " " + activeVehicle.battery.current_rotor.units) : "N/A"
+                text: (activeVehicle && activeVehicle.quaternium.current_rotor.value != -1) ? (activeVehicle.quaternium.current_rotor.valueString + " " + activeVehicle.quaternium.current_rotor.units) : "N/A"
                 font.pointSize: ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
             }
 
             QGCLabel {
                 Layout.column: 1
                 Layout.row: 6
-                text: qsTr("Fuel level:")
-                font.pointSize: ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
-            }
-
-            ProgressBar {
-                id: progressbarfuel
-
-                //Position parameters
-                Layout.column: 2
-                Layout.row: 6
-                Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 0.5
-                Layout.preferredWidth: getBarWidth() //10 * ScreenTools.smallFontPointSize
-
-
-                //Values and conditions
-                maximumValue: 5000  //Max capacity of the fuel tank is 5000ml
-                indeterminate: (activeVehicle && activeVehicle.battery.fuel_level.value !== -1) ? false : true
-                value: (activeVehicle && activeVehicle && activeVehicle.battery.fuel_level.value !== -1) ? activeVehicle.battery.fuel_level.value : 0
-
-                style: ProgressBarStyle{
-                    background: Rectangle {
-                        radius: 1
-                        color: "lightgrey"
-                        implicitWidth: parent.Layout.preferredWidth
-                        implicitHeight: parent.Layout.preferredHeight
-                    }
-                    progress: Rectangle {
-                        color: "#efae4d" //yellow
-                        //border.color: "green"
-                    }
-                }
-            }
-
-            QGCLabel {
-                Layout.column: 3
-                Layout.row: 6
-                text: (activeVehicle && activeVehicle.battery.fuel_level.value != -1) ? (activeVehicle.battery.fuel_level.valueString + " " + activeVehicle.battery.fuel_level.units) : "N/A"
-                font.pointSize: ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
-            }
-
-            QGCLabel {
-                Layout.column: 1
-                Layout.row: 7
                 text: qsTr("Throttle percentage:")
                 font.pointSize: ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
             }
@@ -319,14 +276,14 @@ Rectangle { //Item
 
                 //Position parameters
                 Layout.column: 2
-                Layout.row: 7
+                Layout.row: 6
                 Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 0.5
                 Layout.preferredWidth: getBarWidth() //10 * ScreenTools.smallFontPointSize
 
                 //Values and conditions
                 maximumValue: 100
-                indeterminate: (activeVehicle && activeVehicle.battery.throttle_percentage.value !== -1) ? false : true
-                value: (activeVehicle && activeVehicle && activeVehicle.battery.throttle_percentage.value !== -1) ? activeVehicle.battery.throttle_percentage.value : 0
+                indeterminate: (activeVehicle && activeVehicle.quaternium.throttle_percentage.value !== -1) ? false : true
+                value: (activeVehicle && activeVehicle && activeVehicle.quaternium.throttle_percentage.value !== -1) ? activeVehicle.quaternium.throttle_percentage.value : 0
 
                 style: ProgressBarStyle{
                     background: Rectangle {
@@ -344,8 +301,8 @@ Rectangle { //Item
 
             QGCLabel {
                 Layout.column: 3
-                Layout.row: 7
-                text: (activeVehicle && activeVehicle.battery.throttle_percentage.value != -1) ? (activeVehicle.battery.throttle_percentage.valueString + " " + activeVehicle.battery.throttle_percentage.units) : "N/A"
+                Layout.row: 6
+                text: (activeVehicle && activeVehicle.quaternium.throttle_percentage.value != -1) ? (activeVehicle.quaternium.throttle_percentage.valueString + " " + activeVehicle.quaternium.throttle_percentage.units) : "N/A"
                 font.pointSize: ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
             }
         }

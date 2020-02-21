@@ -9,29 +9,22 @@
 {
     "name":             "percentRemaining",
     "shortDescription": "Percent",
-    "type":             "int32",
+    "type":             "double",
     "decimalPlaces":    0,
     "units":            "%"
 },
 {
     "name":             "mahConsumed",
     "shortDescription": "Consumed",
-    "type":             "int32",
-     "decimalPlaces":    0,
-     "units":            "mAh"
+    "type":             "double",
+    "decimalPlaces":    0,
+    "units":            "mAh"
 },
 {
     "name":             "current",
     "shortDescription": "Current",
-    "type":             "float",
-    "decimalPlaces":    1,
-    "units":            "A"
-},
-{
-    "name":             "currentGen",
-    "shortDescription": "Current Generator",
-    "type":             "float",
-    "decimalPlaces":    1,
+    "type":             "double",
+    "decimalPlaces":    2,
     "units":            "A"
 },
 {
@@ -42,50 +35,25 @@
     "units":            "C"
 },
 {
-    "name":             "cellCount",
-    "shortDescription": "Cell Count",
-    "type":             "int32",
-    "decimalPlaces":    0
-},
-{
     "name":             "instantPower",
     "shortDescription": "Watts",
-    "type":             "float",
+    "type":             "double",
     "decimalPlaces":    2,
     "units":            "W"
 },
 {
     "name":             "timeRemaining",
     "shortDescription": "Time Remaining",
-    "type":             "int32",
+    "type":             "double",
+    "decimalPlaces":    0,
     "units":            "s"
 },
 {
     "name":             "chargeState",
     "shortDescription": "Charge State",
     "type":             "uint8",
-    "enumStrings":      "Low Battery State Not Provided,Normal Operation,Low Battery State,Critical Battery State,Emergency Battery State,Battery Failed,Battery Unhealthy",
+    "enumStrings":      "n/a,Normal Operation,Low Battery State,Critical Battery State,Emergency Battery State,Battery Failed,Battery Unhealthy",
     "enumValues":       "0,1,2,3,4,5,6",
     "decimalPlaces":    0
-},
-
-{
-    "name":             "currentRotor",
-    "shortDescription": "Current Rotor",
-    "type":             "double",
-    "decimalPlaces":    1,
-    "units":            "A"
-},
-{
-    "name":             "mlLeftTank",
-    "shortDescription": "Fuel Level",
-    "type":             "int32",
-    "units":            "ml"
-},
-{
-    "name":             "percentThrottle",
-    "shortDescription": "Throttle",
-    "type":             "int32",
-    "units":            "%"
 }
 ]

@@ -1,0 +1,84 @@
+[
+{
+    "name":             "voltageBattery",
+    "shortDescription": "Voltage Battery",
+    "type":             "double",
+    "decimalPlaces":    2,
+    "units":            "V"
+},
+{
+    "name":             "currentBattery",
+    "shortDescription": "Current Battery",
+    "type":             "double",
+    "decimalPlaces":    2,
+    "units":            "A"
+},
+{
+    "name":             "currentGen",
+    "shortDescription": "Current Generator",
+    "type":             "double",
+    "decimalPlaces":    2,
+    "units":            "A"
+},
+{
+    "name":             "currentRotor",
+    "shortDescription": "Current Rotor",
+    "type":             "double",
+    "decimalPlaces":    2,
+    "units":            "A"
+},
+{
+    "name":             "percentThrottle",
+    "shortDescription": "Throttle",
+    "type":             "int32",
+    "units":            "%"
+},
+{
+    "name":             "pwInjector",
+    "shortDescription": "Injector PW",
+    "type":             "int32",
+    "units":            "μs"
+},
+{
+    "name":             "rpm",
+    "shortDescription": "RPM",
+    "type":             "int32",
+    "units":            "r/min"
+},
+{
+    "name":             "pressureAtm",
+    "shortDescription": "Atm Press",
+    "type":             "int32",
+    "units":            "kPa"
+},
+{
+    "name":             "pressureAir",
+    "shortDescription": "Air Press",
+    "type":             "int32",
+    "units":            "kPa"
+},
+{
+    "name":             "tempAir",
+    "shortDescription": "Air Temp",
+    "type":             "int32",
+    "units":            "°C"
+},
+{
+    "name":             "tempCylinder",
+    "shortDescription": "Cylinder Temp",
+    "type":             "int32",
+    "units":            "°C"
+},
+{
+    "name":             "positionThrottle",
+    "shortDescription": "Throttle position",
+    "type":             "int32",
+    "units":            " "
+},
+{
+    "name":             "battery",
+    "shortDescription": "Battery",
+    "type":             "int32",
+    "units":            "V"
+}
+]

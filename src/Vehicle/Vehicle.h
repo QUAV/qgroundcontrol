@@ -76,11 +76,6 @@ public:
     Fact* rotationPitch90   (void) { return &_rotationPitch90Fact; }
     Fact* rotationPitch270  (void) { return &_rotationPitch270Fact; }
 
-    bool idSet(void) { return _idSet; }
-    void setIdSet(bool idSet) { _idSet = idSet; }
-    uint8_t id(void) { return _id; }
-    void setId(uint8_t id) { _id = id; }
-
     static const char* _rotationNoneFactName;
     static const char* _rotationYaw45FactName;
     static const char* _rotationYaw90FactName;
@@ -103,9 +98,6 @@ private:
     Fact _rotationYaw315Fact;
     Fact _rotationPitch90Fact;
     Fact _rotationPitch270Fact;
-
-    bool    _idSet; // true: _id is set to seen sensor id
-    uint8_t _id;    // The id for the sensor being tracked. Current support for only a single sensor.
 };
 
 class VehicleSetpointFactGroup : public FactGroup
@@ -255,6 +247,7 @@ private:
 class VehicleBatteryFactGroup : public FactGroup
 {
     Q_OBJECT
+
 public:
     VehicleBatteryFactGroup(QObject* parent = nullptr);
 
@@ -262,43 +255,31 @@ public:
     Q_PROPERTY(Fact* percentRemaining   READ percentRemaining   CONSTANT)
     Q_PROPERTY(Fact* mahConsumed        READ mahConsumed        CONSTANT)
     Q_PROPERTY(Fact* current            READ current            CONSTANT)
-    Q_PROPERTY(Fact* current_generator  READ current_generator  CONSTANT)
     Q_PROPERTY(Fact* temperature        READ temperature        CONSTANT)
     Q_PROPERTY(Fact* cellCount          READ cellCount          CONSTANT)
     Q_PROPERTY(Fact* instantPower       READ instantPower       CONSTANT)
     Q_PROPERTY(Fact* timeRemaining      READ timeRemaining      CONSTANT)
     Q_PROPERTY(Fact* chargeState        READ chargeState        CONSTANT)
-    Q_PROPERTY(Fact* current_rotor      READ current_rotor      CONSTANT)
-    Q_PROPERTY(Fact* fuel_level         READ fuel_level         CONSTANT)
-    Q_PROPERTY(Fact* throttle_percentage READ throttle_percentage CONSTANT)
 
     Fact* voltage                   (void) { return &_voltageFact; }
     Fact* percentRemaining          (void) { return &_percentRemainingFact; }
     Fact* mahConsumed               (void) { return &_mahConsumedFact; }
     Fact* current                   (void) { return &_currentFact; }
-    Fact* current_generator         (void) { return &_currentgeneratorFact; }
     Fact* temperature               (void) { return &_temperatureFact; }
     Fact* cellCount                 (void) { return &_cellCountFact; }
     Fact* instantPower              (void) { return &_instantPowerFact; }
     Fact* timeRemaining             (void) { return &_timeRemainingFact; }
     Fact* chargeState               (void) { return &_chargeStateFact; }
-    Fact* current_rotor             (void) { return &_currentrotorFact; }
-    Fact* fuel_level                (void) { return &_fuellevelFact; }
-    Fact* throttle_percentage       (void) { return &_throttlepercentageFact; }
 
     static const char* _voltageFactName;
     static const char* _percentRemainingFactName;
     static const char* _mahConsumedFactName;
     static const char* _currentFactName;
-    static const char* _currentgeneratorFactName;
     static const char* _temperatureFactName;
     static const char* _cellCountFactName;
     static const char* _instantPowerFactName;
     static const char* _timeRemainingFactName;
     static const char* _chargeStateFactName;
-    static const char* _currentrotorFactName;
-    static const char* _fuellevelFactName;
-    static const char* _throttlepercentageFactName;
 
     static const char* _settingsGroup;
 
@@ -306,28 +287,20 @@ public:
     static const int    _percentRemainingUnavailable;
     static const int    _mahConsumedUnavailable;
     static const int    _currentUnavailable;
-    static const int    _currentgeneratorUnavailable;
     static const double _temperatureUnavailable;
     static const int    _cellCountUnavailable;
     static const double _instantPowerUnavailable;
-    static const double _currentrotorUnavailable;
-    static const double _fuellevelUnavailable;
-    static const double _throttlepercentageUnavailable;
 
 private:
     Fact            _voltageFact;
     Fact            _percentRemainingFact;
     Fact            _mahConsumedFact;
     Fact            _currentFact;
-    Fact            _currentgeneratorFact;
     Fact            _temperatureFact;
     Fact            _cellCountFact;
     Fact            _instantPowerFact;
     Fact            _timeRemainingFact;
     Fact            _chargeStateFact;
-    Fact            _currentrotorFact;
-    Fact            _fuellevelFact;
-    Fact            _throttlepercentageFact;
 };
 
 class VehicleTemperatureFactGroup : public FactGroup
@@ -509,6 +482,88 @@ private:
 #endif
 };
 
+
+class VehicleQuaterniumFactGroup : public FactGroup
+{
+    Q_OBJECT
+
+public:
+    VehicleQuaterniumFactGroup(QObject* parent = nullptr);
+
+    Q_PROPERTY(Fact* voltage_battery            READ voltage_battery            CONSTANT)
+    Q_PROPERTY(Fact* current_battery            READ current_battery            CONSTANT)
+    Q_PROPERTY(Fact* current_generator          READ current_generator          CONSTANT)
+    Q_PROPERTY(Fact* current_rotor              READ current_rotor              CONSTANT)
+    Q_PROPERTY(Fact* throttle_percentage        READ throttle_percentage        CONSTANT)
+    Q_PROPERTY(Fact* efi_injector_pw            READ efi_injector_pw            CONSTANT)
+    Q_PROPERTY(Fact* efi_rpm                    READ efi_rpm                    CONSTANT)
+    Q_PROPERTY(Fact* efi_atmospheric_pressure   READ efi_atmospheric_pressure   CONSTANT)
+    Q_PROPERTY(Fact* efi_air_pressure           READ efi_air_pressure           CONSTANT)
+    Q_PROPERTY(Fact* efi_air_temperature        READ efi_air_temperature        CONSTANT)
+    Q_PROPERTY(Fact* efi_cyl_temperature        READ efi_cyl_temperature        CONSTANT)
+    Q_PROPERTY(Fact* efi_throttle_position      READ efi_throttle_position      CONSTANT)
+    Q_PROPERTY(Fact* efi_batt                   READ efi_batt                   CONSTANT)
+
+    Fact* voltage_battery           (void) { return &_voltageBatteryFact; }
+    Fact* current_battery           (void) { return &_currentBatteryFact; }
+    Fact* current_generator         (void) { return &_currentGeneratorFact; }
+    Fact* current_rotor             (void) { return &_currentRotorFact; }
+    Fact* throttle_percentage       (void) { return &_throttlePercentageFact; }
+    Fact* efi_injector_pw           (void) { return &_efiInjectorPWFact; }
+    Fact* efi_rpm                   (void) { return &_efiRpmFact; }
+    Fact* efi_atmospheric_pressure  (void) { return &_efiAtmosphericPressureFact; }
+    Fact* efi_air_pressure          (void) { return &_efiAirPressureFact; }
+    Fact* efi_air_temperature       (void) { return &_efiAirTemperatureFact; }
+    Fact* efi_cyl_temperature       (void) { return &_efiCylTemperatureFact; }
+    Fact* efi_throttle_position     (void) { return &_efiThrottlePositionFact; }
+    Fact* efi_batt                  (void) { return &_efiBattFact; }
+
+    static const char* _voltageBatteryFactName;
+    static const char* _currentBatteryFactName;
+    static const char* _currentGeneratorFactName;
+    static const char* _currentRotorFactName;
+    static const char* _throttlePercentageFactName;
+    static const char* _efiInjectorPWFactName;
+    static const char* _efiRpmFactName;
+    static const char* _efiAtmosphericPressureFactName;
+    static const char* _efiAirPressureFactName;
+    static const char* _efiAirTemperatureFactName;
+    static const char* _efiCylTemperatureFactName;
+    static const char* _efiThrottlePositionFactName;
+    static const char* _efiBattFactName;
+
+    static const int    _voltageBatteryUnavailable;
+    static const int    _currentBatteryUnavailable;
+    static const int    _currentGeneratorUnavailable;
+    static const int    _currentRotorUnavailable;
+    static const int    _throttlePercentageUnavailable;
+    static const int    _efiInjectorPWUnavailable;
+    static const int    _efiRpmUnavailable;
+    static const int    _efiAtmosphericPressureUnavailable;
+    static const int    _efiAirPressureUnavailable;
+    static const int    _efiAirTemperatureUnavailable;
+    static const int    _efiCylTemperatureUnavailable;
+    static const int    _efiThrottlePositionUnavailable;
+    static const int    _efiBattUnavailable;
+
+private:
+    Fact            _voltageBatteryFact;
+    Fact            _currentBatteryFact;
+    Fact            _currentGeneratorFact;
+    Fact            _currentRotorFact;
+    Fact            _throttlePercentageFact;
+    Fact            _efiInjectorPWFact;
+    Fact            _efiRpmFact;
+    Fact            _efiAtmosphericPressureFact;
+    Fact            _efiAirPressureFact;
+    Fact            _efiAirTemperatureFact;
+    Fact            _efiCylTemperatureFact;
+    Fact            _efiThrottlePositionFact;
+    Fact            _efiBattFact;
+
+};
+
+
 class Vehicle : public FactGroup
 {
     Q_OBJECT
@@ -565,6 +620,7 @@ public:
     Q_PROPERTY(AutoPilotPlugin*     autopilot               MEMBER _autopilotPlugin                                     CONSTANT)
     Q_PROPERTY(QGeoCoordinate       coordinate              READ coordinate                                             NOTIFY coordinateChanged)
     Q_PROPERTY(QGeoCoordinate       homePosition            READ homePosition                                           NOTIFY homePositionChanged)
+    Q_PROPERTY(QGeoCoordinate       armedPosition           READ armedPosition                                          NOTIFY armedPositionChanged)
     Q_PROPERTY(bool                 armed                   READ armed                  WRITE setArmed                  NOTIFY armedChanged)
     Q_PROPERTY(bool                 autoDisarm              READ autoDisarm                                             NOTIFY autoDisarmChanged)
     Q_PROPERTY(bool                 flightModeSetAvailable  READ flightModeSetAvailable                                 CONSTANT)
@@ -701,7 +757,6 @@ public:
     Q_PROPERTY(Fact* throttlePct        READ throttlePct        CONSTANT)
     Q_PROPERTY(Fact* altitudeAGL        READ altitudeAGL        CONSTANT)
 
-
     Q_PROPERTY(FactGroup* gps               READ gpsFactGroup               CONSTANT)
     Q_PROPERTY(FactGroup* battery           READ battery1FactGroup          CONSTANT)
     Q_PROPERTY(FactGroup* battery2          READ battery2FactGroup          CONSTANT)
@@ -711,6 +766,7 @@ public:
     Q_PROPERTY(FactGroup* clock             READ clockFactGroup             CONSTANT)
     Q_PROPERTY(FactGroup* setpoint          READ setpointFactGroup          CONSTANT)
     Q_PROPERTY(FactGroup* estimatorStatus   READ estimatorStatusFactGroup   CONSTANT)
+    Q_PROPERTY(FactGroup* quaternium        READ quaterniumFactGroup        CONSTANT)
 
     Q_PROPERTY(int      firmwareMajorVersion        READ firmwareMajorVersion       NOTIFY firmwareVersionChanged)
     Q_PROPERTY(int      firmwareMinorVersion        READ firmwareMinorVersion       NOTIFY firmwareVersionChanged)
@@ -812,7 +868,8 @@ public:
 
     // Property accessors
 
-    QGeoCoordinate coordinate(void) { return _coordinate; }
+    QGeoCoordinate coordinate       (void) { return _coordinate; }
+    QGeoCoordinate armedPosition    (void) { return _armedPosition; }
 
     typedef enum {
         JoystickModeRC,         ///< Joystick emulates an RC Transmitter
@@ -822,6 +879,8 @@ public:
         JoystickModeVelocity,
         JoystickModeMax
     } JoystickMode_t;
+
+    void updateFlightDistance(double distance);
 
     int joystickMode(void);
     void setJoystickMode(int mode);
@@ -872,10 +931,10 @@ public:
     bool armed      () { return _armed; }
     void setArmed   (bool armed);
 
-    bool flightModeSetAvailable(void);
-    QStringList flightModes(void);
-    QString flightMode(void) const;
-    void setFlightMode(const QString& flightMode);
+    bool flightModeSetAvailable             (void);
+    QStringList flightModes                 (void);
+    QString flightMode                      (void) const;
+    void setFlightMode                      (const QString& flightMode);
 
     QString priorityLinkName(void) const;
     QVariantList links(void) const;
@@ -922,6 +981,24 @@ public:
         MessageWarning,
         MessageError
     } MessageType_t;
+
+    typedef struct {
+        signed short volt_batt; // cents of Volt
+        signed short curr_batt; // tenths of Amps
+        signed short current_generator; // tenths of Amps
+        signed short current_rotor; // tenths of Amps
+        unsigned short fuel_level; // ml
+        unsigned short throttle_percentage; //  0-100
+        //
+        unsigned short efi_pw; // injector pulse-width, ms * 1000 (us)
+        unsigned short efi_rpm;
+        signed short efi_baro; // Atmospheric pressure kPa * 10 (approx mBar)
+        signed short efi_map;    // Air pressure kPa * 10 (approx mBar)
+        signed short efi_mat; // Air intake temperature degC * 10
+        signed short efi_clt; // Cylinder head temperature degC * 10
+        signed short efi_tps; // Throttle position sensor: % * 10
+        signed short efi_batt; // V * 10
+    } fc_comms_gov_info_t;
 
     bool            messageTypeNone         () { return _currentMessageType == MessageNone; }
     bool            messageTypeNormal       () { return _currentMessageType == MessageNormal; }
@@ -1016,6 +1093,7 @@ public:
     FactGroup* setpointFactGroup        (void) { return &_setpointFactGroup; }
     FactGroup* distanceSensorFactGroup  (void) { return &_distanceSensorFactGroup; }
     FactGroup* estimatorStatusFactGroup (void) { return &_estimatorStatusFactGroup; }
+    FactGroup* quaterniumFactGroup      (void) { return &_quaterniumFactGroup; }
 
     void setConnectionLostEnabled(bool connectionLostEnabled);
 
@@ -1131,6 +1209,8 @@ public:
     qreal       gimbalYaw               () { return static_cast<qreal>(_curGinmbalYaw); }
     bool        gimbalData              () { return _haveGimbalData; }
 
+
+
 public slots:
     void setVtolInFwdFlight             (bool vtolInFwdFlight);
 
@@ -1142,6 +1222,7 @@ signals:
     void activeChanged(bool active);
     void mavlinkMessageReceived(const mavlink_message_t& message);
     void homePositionChanged(const QGeoCoordinate& homePosition);
+    void armedPositionChanged();
     void armedChanged(bool armed);
     void flightModeChanged(const QString& flightMode);
     void hilModeChanged(bool hilMode);
@@ -1270,6 +1351,9 @@ private slots:
     void _geoFenceLoadComplete(void);
     void _rallyPointLoadComplete(void);
     void _sendMavCommandAgain(void);
+
+    void _sendGovernorRequest(void);
+
     void _clearCameraTriggerPoints(void);
     void _updateDistanceHeadingToHome(void);
     void _updateHeadingToNextWP(void);
@@ -1285,6 +1369,7 @@ private slots:
     void _updateFlightTime      (void);
 
 private:
+
     bool _containsLink          (LinkInterface* link);
     void _addLink               (LinkInterface* link);
     void _joystickChanged       (Joystick* joystick);
@@ -1302,6 +1387,7 @@ private:
     void _handleWindCov(mavlink_message_t& message);
     void _handleVibration(mavlink_message_t& message);
     void _handleExtendedSysState(mavlink_message_t& message);
+    void _handleQuaterniumSystem(mavlink_command_long_t message);
     void _handleCommandAck(mavlink_message_t& message);
     void _handleCommandLong(mavlink_message_t& message);
     void _handleAutopilotVersion(LinkInterface* link, mavlink_message_t& message);
@@ -1344,6 +1430,7 @@ private:
     void _handleMavlinkLoggingDataAcked(mavlink_message_t& message);
     void _ackMavlinkLogData(uint16_t sequence);
     void _sendNextQueuedMavCommand(void);
+    void _requestDataFromGovernor(const int parameter_id);
     void _updatePriorityLink(bool updateActive, bool sendCommand);
     void _commonInit(void);
     void _startPlanRequest(void);
@@ -1386,6 +1473,7 @@ private:
 
     QGeoCoordinate  _coordinate;
     QGeoCoordinate  _homePosition;
+    QGeoCoordinate  _armedPosition;
 
     UASInterface*   _mav;
     int             _currentMessageCount;
@@ -1442,6 +1530,8 @@ private:
     static const int                _mavCommandMaxRetryCount = 3;
     static const int                _mavCommandAckTimeoutMSecs = 3000;
     static const int                _mavCommandAckTimeoutMSecsHighLatency = 120000;
+
+    QTimer                          _mavCommandLongTimer;
 
     QString             _prearmError;
     QTimer              _prearmErrorTimer;
@@ -1525,7 +1615,13 @@ private:
     QString _gitHash;
     quint64 _uid;
 
-    int _lastAnnouncedLowBatteryPercent;
+    QTime   _lastBatteryAnnouncement;
+    int     _lastAnnouncedLowBatteryPercent;
+
+    QTime   _lastInsufficientGeneratedCurrentAnnouncement;
+    QTime   _insufficientGeneratedCurrent;
+    int     _currentDifference;
+    int     _lastAnnouncedCurrentDifference;
 
     SharedLinkInterfacePointer _priorityLink;  // We always keep a reference to the priority link to manage shutdown ordering
     bool _priorityLinkCommanded;
@@ -1582,6 +1678,7 @@ private:
     VehicleSetpointFactGroup        _setpointFactGroup;
     VehicleDistanceSensorFactGroup  _distanceSensorFactGroup;
     VehicleEstimatorStatusFactGroup _estimatorStatusFactGroup;
+    VehicleQuaterniumFactGroup      _quaterniumFactGroup;
 
     static const char* _rollFactName;
     static const char* _pitchFactName;
@@ -1613,6 +1710,7 @@ private:
     static const char* _clockFactGroupName;
     static const char* _distanceSensorFactGroupName;
     static const char* _estimatorStatusFactGroupName;
+    static const char* _quaterniumFactGroupName;
 
     static const int _vehicleUIUpdateRateMSecs = 100;
 

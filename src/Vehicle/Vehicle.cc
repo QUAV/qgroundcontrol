@@ -55,6 +55,7 @@ QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 #define UPDATE_TIMER 50
 #define DEFAULT_LAT  38.965767f
 #define DEFAULT_LON -120.083923f
+#define GOVERNOR_REQUEST 198
 
 const QString guided_mode_not_supported_by_vehicle = QObject::tr("Guided mode not supported by Vehicle.");
 
@@ -92,6 +93,7 @@ const char* Vehicle::_temperatureFactGroupName =        "temperature";
 const char* Vehicle::_clockFactGroupName =              "clock";
 const char* Vehicle::_distanceSensorFactGroupName =     "distanceSensor";
 const char* Vehicle::_estimatorStatusFactGroupName =    "estimatorStatus";
+const char* Vehicle::_quaterniumFactGroupName =         "quaternium";
 
 // Standard connected vehicle
 Vehicle::Vehicle(LinkInterface*             link,
@@ -191,6 +193,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _gitHash(versionNotSetValue)
     , _uid(0)
     , _lastAnnouncedLowBatteryPercent(100)
+    , _lastAnnouncedCurrentDifference(1)
     , _priorityLinkCommanded(false)
     , _orbitActive(false)
     , _pidTuningTelemetryMode(false)
@@ -225,6 +228,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _clockFactGroup(this)
     , _distanceSensorFactGroup(this)
     , _estimatorStatusFactGroup(this)
+    , _quaterniumFactGroup(this)
 {
     connect(_joystickManager, &JoystickManager::activeJoystickChanged, this, &Vehicle::_loadSettings);
     connect(qgcApp()->toolbox()->multiVehicleManager(), &MultiVehicleManager::activeVehicleAvailableChanged, this, &Vehicle::_loadSettings);
@@ -260,6 +264,11 @@ Vehicle::Vehicle(LinkInterface*             link,
     _mavCommandAckTimer.setSingleShot(true);
     _mavCommandAckTimer.setInterval(_highLatencyLink ? _mavCommandAckTimeoutMSecsHighLatency : _mavCommandAckTimeoutMSecs);
     connect(&_mavCommandAckTimer, &QTimer::timeout, this, &Vehicle::_sendMavCommandAgain);
+
+    // Request data from governor every second
+    _mavCommandLongTimer.setInterval(1000);
+    connect(&_mavCommandLongTimer, &QTimer::timeout, this, &Vehicle::_sendGovernorRequest);
+    _mavCommandLongTimer.start();
 
     _mav = uas();
 
@@ -303,6 +312,9 @@ Vehicle::Vehicle(LinkInterface*             link,
     // Start csv logger
     connect(&_csvLogTimer, &QTimer::timeout, this, &Vehicle::_writeCsvLine);
     _csvLogTimer.start(1000);
+
+    _lastBatteryAnnouncement.start();
+    _lastInsufficientGeneratedCurrentAnnouncement.start();
 }
 
 // Disconnected Vehicle for offline editing
@@ -393,6 +405,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _gitHash(versionNotSetValue)
     , _uid(0)
     , _lastAnnouncedLowBatteryPercent(100)
+    , _lastAnnouncedCurrentDifference(1)
     , _orbitActive(false)
     , _pidTuningTelemetryMode(false)
     , _pidTuningWaitingForRates(false)
@@ -509,6 +522,7 @@ void Vehicle::_commonInit(void)
     _addFactGroup(&_clockFactGroup,             _clockFactGroupName);
     _addFactGroup(&_distanceSensorFactGroup,    _distanceSensorFactGroupName);
     _addFactGroup(&_estimatorStatusFactGroup,   _estimatorStatusFactGroupName);
+    _addFactGroup(&_quaterniumFactGroup,        _quaterniumFactGroupName);
 
     // Add firmware-specific fact groups, if provided
     QMap<QString, FactGroup*>* fwFactGroups = _firmwarePlugin->factGroups();
@@ -1038,17 +1052,7 @@ void Vehicle::_handleDistanceSensor(mavlink_message_t& message)
 {
     mavlink_distance_sensor_t distanceSensor;
 
-    mavlink_msg_distance_sensor_decode(&message, &distanceSensor);\
-
-    if (!_distanceSensorFactGroup.idSet()) {
-        _distanceSensorFactGroup.setIdSet(true);
-        _distanceSensorFactGroup.setId(distanceSensor.id);
-    }
-
-    if (_distanceSensorFactGroup.id() != distanceSensor.id) {
-        // We can only handle a single sensor reporting
-        return;
-    }
+    mavlink_msg_distance_sensor_decode(&message, &distanceSensor);
 
     struct orientation2Fact_s {
         MAV_SENSOR_ORIENTATION  orientation;
@@ -1470,6 +1474,10 @@ void Vehicle::_handleCommandLong(mavlink_message_t& message)
             }
         }
         break;
+
+    case MAV_CMD_QUAT_GOV_INFO1:
+       _handleQuaterniumSystem(cmd);
+       break;
     }
 #endif
 }
@@ -1504,6 +1512,109 @@ void Vehicle::_handleExtendedSysState(mavlink_message_t& message)
             emit vtolInFwdFlightChanged(vtolInFwdFlight);
         }
     }
+}
+
+
+void Vehicle::_handleQuaterniumSystem(mavlink_command_long_t cmd)
+{
+    fc_comms_gov_info_t* gov_info = (fc_comms_gov_info_t*)&cmd.param1;
+    VehicleQuaterniumFactGroup& quaterniumFactGroup = _quaterniumFactGroup;
+
+    if (gov_info->volt_batt == -1) {
+        quaterniumFactGroup.voltage_battery()->setRawValue(VehicleQuaterniumFactGroup::_voltageBatteryUnavailable);
+    } else {
+        quaterniumFactGroup.voltage_battery()->setRawValue(static_cast<double>(gov_info->volt_batt / 100.0));
+    }
+
+    if (gov_info->curr_batt == -1) {
+        quaterniumFactGroup.current_battery()->setRawValue(VehicleQuaterniumFactGroup::_currentBatteryUnavailable);
+    } else {
+        quaterniumFactGroup.current_battery()->setRawValue(static_cast<double>(gov_info->curr_batt  / 10.0));
+    }
+
+    if (gov_info->current_generator == -1) {
+        quaterniumFactGroup.current_generator()->setRawValue(VehicleQuaterniumFactGroup::_currentGeneratorUnavailable);
+    } else {
+        quaterniumFactGroup.current_generator()->setRawValue(static_cast<double>(gov_info->current_generator / 10.0  ));
+    }
+
+    if (gov_info->current_rotor == -1) {
+        quaterniumFactGroup.current_rotor()->setRawValue(VehicleQuaterniumFactGroup::_currentGeneratorUnavailable);
+    } else {
+        quaterniumFactGroup.current_rotor()->setRawValue(static_cast<double>(gov_info->current_rotor / 10.0));
+    }
+
+    if (gov_info->throttle_percentage == 0xffff) {
+        quaterniumFactGroup.throttle_percentage()->setRawValue(VehicleQuaterniumFactGroup::_throttlePercentageUnavailable);
+    } else {
+        quaterniumFactGroup.throttle_percentage()->setRawValue(static_cast<double>(gov_info->throttle_percentage/10));
+    }
+
+    if (gov_info->efi_pw == 0xffff) {
+        quaterniumFactGroup.efi_injector_pw()->setRawValue(VehicleQuaterniumFactGroup::_efiInjectorPWUnavailable);
+    } else {
+        quaterniumFactGroup.efi_injector_pw()->setRawValue(static_cast<double>(gov_info->efi_pw));
+    }
+
+    if (gov_info->efi_rpm == 0xffff) {
+        quaterniumFactGroup.efi_rpm()->setRawValue(VehicleQuaterniumFactGroup::_efiRpmUnavailable);
+    } else {
+        quaterniumFactGroup.efi_rpm()->setRawValue(static_cast<double>(gov_info->efi_rpm));
+    }
+
+    if (gov_info->efi_baro == -1) {
+        quaterniumFactGroup.efi_atmospheric_pressure()->setRawValue(VehicleQuaterniumFactGroup::_efiAtmosphericPressureUnavailable);
+    } else {
+        quaterniumFactGroup.efi_atmospheric_pressure()->setRawValue(static_cast<double>(gov_info->efi_baro/10));
+    }
+
+    if (gov_info->efi_map == -1) {
+        quaterniumFactGroup.efi_air_pressure()->setRawValue(VehicleQuaterniumFactGroup::_efiAirPressureUnavailable);
+    } else {
+        quaterniumFactGroup.efi_air_pressure()->setRawValue(static_cast<double>(gov_info->efi_map/10));
+    }
+
+    if (gov_info->efi_mat == -1) {
+        quaterniumFactGroup.efi_air_temperature()->setRawValue(VehicleQuaterniumFactGroup::_efiAirTemperatureUnavailable);
+    } else {
+        quaterniumFactGroup.efi_air_temperature()->setRawValue(static_cast<double>(gov_info->efi_mat/10));
+    }
+
+    if (gov_info->efi_clt == -1) {
+        quaterniumFactGroup.efi_cyl_temperature()->setRawValue(VehicleQuaterniumFactGroup::_efiCylTemperatureUnavailable);
+    } else {
+        quaterniumFactGroup.efi_cyl_temperature()->setRawValue(static_cast<double>(gov_info->efi_clt/10));
+    }
+
+    if (gov_info->efi_tps == -1) {
+        quaterniumFactGroup.efi_throttle_position() ->setRawValue(VehicleQuaterniumFactGroup::_efiThrottlePositionUnavailable);
+    } else {
+        quaterniumFactGroup.efi_throttle_position()->setRawValue(static_cast<double>(gov_info->efi_tps/10));
+    }
+
+    if (gov_info->efi_batt == -1) {
+        quaterniumFactGroup.efi_batt()->setRawValue(VehicleQuaterniumFactGroup::_efiBattUnavailable);
+    } else {
+        quaterniumFactGroup.efi_batt()->setRawValue(static_cast<double>(gov_info->efi_batt/10));
+    }
+
+
+    //-- Consumed current warning
+
+    _currentDifference = gov_info->current_rotor - gov_info->current_generator;
+
+    if (_currentDifference > 0) {
+        if (_lastAnnouncedCurrentDifference > 0) {
+            _insufficientGeneratedCurrent.start();
+        }
+        else if(_insufficientGeneratedCurrent.elapsed() > 10000 &&
+                _lastInsufficientGeneratedCurrentAnnouncement.elapsed() > 25000) {
+            qgcApp()->showMessage(tr("Consumed current exceeds current from generator by %1 A.").arg(_currentDifference));
+            _lastInsufficientGeneratedCurrentAnnouncement.start();
+        }
+    }
+    _lastAnnouncedCurrentDifference = _currentDifference;
+
 }
 
 void Vehicle::_handleVibration(mavlink_message_t& message)
@@ -1633,31 +1744,6 @@ void Vehicle::_handleBatteryStatus(mavlink_message_t& message)
         batteryFactGroup.mahConsumed()->setRawValue(VehicleBatteryFactGroup::_mahConsumedUnavailable);
     } else {
         batteryFactGroup.mahConsumed()->setRawValue(bat_status.current_consumed);
-    }
-
-
-    if (bat_status.current_generator == -1) {
-        batteryFactGroup.current_generator()->setRawValue(VehicleBatteryFactGroup::_currentgeneratorUnavailable);
-    } else {
-        batteryFactGroup.current_generator()->setRawValue((double)bat_status.current_generator / 100.0);
-    }
-
-    if (bat_status.current_rotor == -1) {
-        batteryFactGroup.current_rotor()->setRawValue(VehicleBatteryFactGroup::_currentrotorUnavailable);
-    } else {
-        batteryFactGroup.current_rotor()->setRawValue((double)bat_status.current_rotor / 100.0);
-    }
-
-    if (bat_status.fuel_level == -1) {
-        batteryFactGroup.fuel_level()->setRawValue(VehicleBatteryFactGroup::_fuellevelUnavailable);
-    } else {
-        batteryFactGroup.fuel_level()->setRawValue((double)bat_status.fuel_level);
-    }
-
-    if (bat_status.throttle_percentage == -1) {
-        batteryFactGroup.throttle_percentage()->setRawValue(VehicleBatteryFactGroup::_throttlepercentageUnavailable);
-    } else {
-        batteryFactGroup.throttle_percentage()->setRawValue((double)bat_status.throttle_percentage);
     }
 
     int cellCount = 0;
@@ -3244,6 +3330,12 @@ void Vehicle::sendMavCommandInt(int component, MAV_CMD command, MAV_FRAME frame,
     }
 }
 
+void Vehicle::_sendGovernorRequest()
+{
+    _requestDataFromGovernor(GOVERNOR_REQUEST);
+    return;
+}
+
 void Vehicle::_sendMavCommandAgain(void)
 {
     if(!_mavCommandQueue.size()) {
@@ -3337,6 +3429,30 @@ void Vehicle::_sendNextQueuedMavCommand(void)
         _mavCommandRetryCount = 0;
         _sendMavCommandAgain();
     }
+}
+
+void Vehicle::_requestDataFromGovernor(const int parameter_id ){
+    mavlink_command_long_t  cmd;
+    mavlink_message_t       msg;
+    memset(&cmd, 0, sizeof(cmd));
+    cmd.target_system =     1;
+    cmd.target_component =  25;
+    cmd.command =           MAV_CMD_REQUEST_MESSAGE;
+    cmd.confirmation =      0;
+    cmd.param1 =            parameter_id;
+    cmd.param2 =            0;
+    cmd.param3 =            0;
+    cmd.param4 =            0;
+    cmd.param5 =            0;
+    cmd.param6 =            0;
+    cmd.param7 =            1;
+
+    mavlink_msg_command_long_encode_chan(_mavlink->getSystemId(),
+                                         _mavlink->getComponentId(),
+                                         priorityLink()->mavlinkChannel(),
+                                         &msg,
+                                         &cmd);
+    sendMessageOnLink(priorityLink(), msg);
 }
 
 void Vehicle::_handleUnsupportedRequestProtocolVersion(void)
@@ -4204,15 +4320,11 @@ const char* VehicleBatteryFactGroup::_voltageFactName =                     "vol
 const char* VehicleBatteryFactGroup::_percentRemainingFactName =            "percentRemaining";
 const char* VehicleBatteryFactGroup::_mahConsumedFactName =                 "mahConsumed";
 const char* VehicleBatteryFactGroup::_currentFactName =                     "current";
-const char* VehicleBatteryFactGroup::_currentgeneratorFactName =            "currentGen";
 const char* VehicleBatteryFactGroup::_temperatureFactName =                 "temperature";
 const char* VehicleBatteryFactGroup::_cellCountFactName =                   "cellCount";
 const char* VehicleBatteryFactGroup::_instantPowerFactName =                "instantPower";
 const char* VehicleBatteryFactGroup::_timeRemainingFactName =               "timeRemaining";
 const char* VehicleBatteryFactGroup::_chargeStateFactName =                 "chargeState";
-const char* VehicleBatteryFactGroup::_currentrotorFactName =                "currentRotor";
-const char* VehicleBatteryFactGroup::_fuellevelFactName =                   "mlLeftTank";
-const char* VehicleBatteryFactGroup::_throttlepercentageFactName =          "percentThrottle";
 
 const char* VehicleBatteryFactGroup::_settingsGroup =                       "Vehicle.battery";
 
@@ -4220,13 +4332,9 @@ const double VehicleBatteryFactGroup::_voltageUnavailable =           -1.0;
 const int    VehicleBatteryFactGroup::_percentRemainingUnavailable =  -1;
 const int    VehicleBatteryFactGroup::_mahConsumedUnavailable =       -1;
 const int    VehicleBatteryFactGroup::_currentUnavailable =           -1;
-const int    VehicleBatteryFactGroup::_currentgeneratorUnavailable =  -1;
 const double VehicleBatteryFactGroup::_temperatureUnavailable =       -1.0;
 const int    VehicleBatteryFactGroup::_cellCountUnavailable =         -1.0;
 const double VehicleBatteryFactGroup::_instantPowerUnavailable =      -1.0;
-const double VehicleBatteryFactGroup::_currentrotorUnavailable =      -1;
-const double VehicleBatteryFactGroup::_fuellevelUnavailable =           -1;
-const double VehicleBatteryFactGroup::_throttlepercentageUnavailable =  -1;
 
 VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
     : FactGroup(1000, ":/json/Vehicle/BatteryFact.json", parent)
@@ -4234,42 +4342,30 @@ VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
     , _percentRemainingFact         (0, _percentRemainingFactName,          FactMetaData::valueTypeInt32)
     , _mahConsumedFact              (0, _mahConsumedFactName,               FactMetaData::valueTypeInt32)
     , _currentFact                  (0, _currentFactName,                   FactMetaData::valueTypeFloat)
-    , _currentgeneratorFact         (0, _currentgeneratorFactName,          FactMetaData::valueTypeFloat)
     , _temperatureFact              (0, _temperatureFactName,               FactMetaData::valueTypeDouble)
     , _cellCountFact                (0, _cellCountFactName,                 FactMetaData::valueTypeInt32)
     , _instantPowerFact             (0, _instantPowerFactName,              FactMetaData::valueTypeFloat)
     , _timeRemainingFact            (0, _timeRemainingFactName,             FactMetaData::valueTypeInt32)
     , _chargeStateFact              (0, _chargeStateFactName,               FactMetaData::valueTypeUint8)
-    , _currentrotorFact             (0, _currentrotorFactName,              FactMetaData::valueTypeFloat)
-    , _fuellevelFact                (0, _fuellevelFactName,                 FactMetaData::valueTypeInt32)
-    , _throttlepercentageFact       (0, _throttlepercentageFactName,        FactMetaData::valueTypeInt32)
 {
     _addFact(&_voltageFact,                 _voltageFactName);
     _addFact(&_percentRemainingFact,        _percentRemainingFactName);
     _addFact(&_mahConsumedFact,             _mahConsumedFactName);
     _addFact(&_currentFact,                 _currentFactName);
-    _addFact(&_currentgeneratorFact,        _currentgeneratorFactName);
     _addFact(&_temperatureFact,             _temperatureFactName);
     _addFact(&_cellCountFact,               _cellCountFactName);
     _addFact(&_instantPowerFact,            _instantPowerFactName);
     _addFact(&_timeRemainingFact,           _timeRemainingFactName);
     _addFact(&_chargeStateFact,             _chargeStateFactName);
-    _addFact(&_currentrotorFact,            _currentrotorFactName);
-    _addFact(&_fuellevelFact,               _fuellevelFactName);
-    _addFact(&_throttlepercentageFact,      _throttlepercentageFactName);
 
     // Start out as not available
     _voltageFact.setRawValue            (_voltageUnavailable);
     _percentRemainingFact.setRawValue   (_percentRemainingUnavailable);
     _mahConsumedFact.setRawValue        (_mahConsumedUnavailable);
     _currentFact.setRawValue            (_currentUnavailable);
-    _currentgeneratorFact.setRawValue   (_currentgeneratorUnavailable);
     _temperatureFact.setRawValue        (_temperatureUnavailable);
     _cellCountFact.setRawValue          (_cellCountUnavailable);
     _instantPowerFact.setRawValue       (_instantPowerUnavailable);
-    _currentrotorFact.setRawValue       (_currentrotorUnavailable);
-    _fuellevelFact.setRawValue          (_fuellevelUnavailable);
-    _throttlepercentageFact.setRawValue (_throttlepercentageUnavailable);
 }
 
 const char* VehicleWindFactGroup::_directionFactName =      "direction";
@@ -4420,8 +4516,6 @@ VehicleDistanceSensorFactGroup::VehicleDistanceSensorFactGroup(QObject* parent)
     , _rotationYaw315Fact   (0, _rotationYaw315FactName,    FactMetaData::valueTypeDouble)
     , _rotationPitch90Fact  (0, _rotationPitch90FactName,   FactMetaData::valueTypeDouble)
     , _rotationPitch270Fact (0, _rotationPitch270FactName,  FactMetaData::valueTypeDouble)
-    , _idSet                (false)
-    , _id                   (0)
 {
     _addFact(&_rotationNoneFact,        _rotationNoneFactName);
     _addFact(&_rotationYaw45Fact,       _rotationYaw45FactName);
@@ -4510,4 +4604,83 @@ VehicleEstimatorStatusFactGroup::VehicleEstimatorStatusFactGroup(QObject* parent
     _addFact(&_tasRatioFact,                    _tasRatioFactName);
     _addFact(&_horizPosAccuracyFact,            _horizPosAccuracyFactName);
     _addFact(&_vertPosAccuracyFact,             _vertPosAccuracyFactName);
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+const char* VehicleQuaterniumFactGroup::_voltageBatteryFactName =              "voltageBattery";
+const char* VehicleQuaterniumFactGroup::_currentBatteryFactName =              "currentBattery";
+const char* VehicleQuaterniumFactGroup::_currentGeneratorFactName =            "currentGen";
+const char* VehicleQuaterniumFactGroup::_currentRotorFactName =                "currentRotor";
+const char* VehicleQuaterniumFactGroup::_throttlePercentageFactName =          "percentThrottle";
+const char* VehicleQuaterniumFactGroup::_efiInjectorPWFactName =               "pwInjector";
+const char* VehicleQuaterniumFactGroup::_efiRpmFactName =                      "rpm";
+const char* VehicleQuaterniumFactGroup::_efiAtmosphericPressureFactName =      "pressureAtm";
+const char* VehicleQuaterniumFactGroup::_efiAirPressureFactName =              "pressureAir";
+const char* VehicleQuaterniumFactGroup::_efiAirTemperatureFactName =           "tempAir";
+const char* VehicleQuaterniumFactGroup::_efiCylTemperatureFactName =           "tempCylinder";
+const char* VehicleQuaterniumFactGroup::_efiThrottlePositionFactName =         "positionThrottle";
+const char* VehicleQuaterniumFactGroup::_efiBattFactName =                     "battery";
+
+
+const int VehicleQuaterniumFactGroup::_voltageBatteryUnavailable =          -1;
+const int VehicleQuaterniumFactGroup::_currentBatteryUnavailable =          -1;
+const int VehicleQuaterniumFactGroup::_currentGeneratorUnavailable =        -1;
+const int VehicleQuaterniumFactGroup::_currentRotorUnavailable =            -1;
+const int VehicleQuaterniumFactGroup::_throttlePercentageUnavailable =      -1;
+const int VehicleQuaterniumFactGroup::_efiInjectorPWUnavailable =           -1;
+const int VehicleQuaterniumFactGroup::_efiRpmUnavailable =                  -1;
+const int VehicleQuaterniumFactGroup::_efiAtmosphericPressureUnavailable =  -1;
+const int VehicleQuaterniumFactGroup::_efiAirPressureUnavailable =          -1;
+const int VehicleQuaterniumFactGroup::_efiAirTemperatureUnavailable =       -1;
+const int VehicleQuaterniumFactGroup::_efiCylTemperatureUnavailable =       -1;
+const int VehicleQuaterniumFactGroup::_efiThrottlePositionUnavailable =     -1;
+const int VehicleQuaterniumFactGroup::_efiBattUnavailable =                 -1;
+
+VehicleQuaterniumFactGroup::VehicleQuaterniumFactGroup(QObject* parent)
+    : FactGroup(1000, ":/json/Vehicle/QuaterniumFact.json", parent)
+    , _voltageBatteryFact           (0, _voltageBatteryFactName,            FactMetaData::valueTypeDouble)
+    , _currentBatteryFact           (0, _currentBatteryFactName,            FactMetaData::valueTypeDouble)
+    , _currentGeneratorFact         (0, _currentGeneratorFactName,          FactMetaData::valueTypeDouble)
+    , _currentRotorFact             (0, _currentRotorFactName,              FactMetaData::valueTypeDouble)
+    , _throttlePercentageFact       (0, _throttlePercentageFactName,        FactMetaData::valueTypeInt32)
+    , _efiInjectorPWFact            (0, _efiInjectorPWFactName,             FactMetaData::valueTypeInt32)
+    , _efiRpmFact                   (0, _efiRpmFactName,                    FactMetaData::valueTypeInt32)
+    , _efiAtmosphericPressureFact   (0, _efiAtmosphericPressureFactName,    FactMetaData::valueTypeInt32)
+    , _efiAirPressureFact           (0, _efiAirPressureFactName,            FactMetaData::valueTypeInt32)
+    , _efiAirTemperatureFact        (0, _efiAirTemperatureFactName,         FactMetaData::valueTypeInt32)
+    , _efiCylTemperatureFact        (0, _efiCylTemperatureFactName,         FactMetaData::valueTypeInt32)
+    , _efiThrottlePositionFact      (0, _efiThrottlePositionFactName,       FactMetaData::valueTypeInt32 )
+    , _efiBattFact                  (0, _efiBattFactName,                   FactMetaData::valueTypeInt32)
+
+{
+    _addFact(&_voltageBatteryFact,        _voltageBatteryFactName);
+    _addFact(&_currentBatteryFact,        _currentBatteryFactName);
+    _addFact(&_currentGeneratorFact,      _currentGeneratorFactName);
+    _addFact(&_currentRotorFact,          _currentRotorFactName);
+    _addFact(&_throttlePercentageFact,    _throttlePercentageFactName);
+    _addFact(&_efiInjectorPWFact,         _efiInjectorPWFactName);
+    _addFact(&_efiRpmFact,                _efiRpmFactName);
+    _addFact(&_efiAtmosphericPressureFact,_efiAtmosphericPressureFactName);
+    _addFact(&_efiAirPressureFact,        _efiAirPressureFactName);
+    _addFact(&_efiAirTemperatureFact,     _efiAirTemperatureFactName);
+    _addFact(&_efiCylTemperatureFact,     _efiCylTemperatureFactName);
+    _addFact(&_efiThrottlePositionFact,   _efiThrottlePositionFactName);
+    _addFact(&_efiBattFact,               _efiBattFactName);
+
+    // Start out as not available
+    _voltageBatteryFact.setRawValue         (_voltageBatteryUnavailable);
+    _currentBatteryFact.setRawValue         (_currentBatteryUnavailable);
+    _currentGeneratorFact.setRawValue       (_currentGeneratorUnavailable);
+    _currentRotorFact.setRawValue           (_currentRotorUnavailable);
+    _throttlePercentageFact.setRawValue     (_throttlePercentageUnavailable);
+    _efiInjectorPWFact.setRawValue          (_efiInjectorPWUnavailable);
+    _efiRpmFact.setRawValue                 (_efiRpmUnavailable);
+    _efiAtmosphericPressureFact.setRawValue (_efiAtmosphericPressureUnavailable);
+    _efiAirPressureFact.setRawValue         (_efiAirPressureUnavailable);
+    _efiAirTemperatureFact.setRawValue      (_efiAirTemperatureUnavailable);
+    _efiCylTemperatureFact.setRawValue      (_efiCylTemperatureUnavailable);
+    _efiThrottlePositionFact.setRawValue    (_efiThrottlePositionUnavailable);
+    _efiBattFact.setRawValue                (_efiBattUnavailable);
 }
