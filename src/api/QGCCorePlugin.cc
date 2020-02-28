@@ -389,8 +389,10 @@ QString QGCCorePlugin::showAdvancedUIMessage() const
 
 void QGCCorePlugin::valuesWidgetDefaultSettings(QStringList& largeValues, QStringList& smallValues)
 {
-    Q_UNUSED(smallValues);
-    largeValues << "Vehicle.altitudeRelative" << "Vehicle.groundSpeed" << "Vehicle.flightTime";
+    smallValues<<"quaternium.voltageBattery"<<"quaternium.currentBattery"<<"quaternium.currentGen"<<"quaternium.currentGen"<<"quaternium.currentRotor"<<
+                 "quaternium.percentThrottle"<<"quaternium.pwInjector"<<"quaternium.rpm"<<"quaternium.pressureAtm"<<"quaternium.pressureAir"<<
+                 "quaternium.tempAir"<<"quaternium.tempCylinder"<<"quaternium.positionThrottle"<<"quaternium.battery";
+    largeValues << "Vehicle.altitudeRelative" << "Vehicle.groundSpeed" << "Vehicle.flightTime" ;
 }
 
 QQmlApplicationEngine* QGCCorePlugin::createRootWindow(QObject *parent)

@@ -83,6 +83,7 @@ void QGCPalette::_buildMap()
     DECLARE_QGC_COLOR(mapWidgetBorderDark,  "#000000", "#000000", "#000000", "#000000")
     DECLARE_QGC_COLOR(brandingPurple,       "#4A2C6D", "#4A2C6D", "#4A2C6D", "#4A2C6D")
     DECLARE_QGC_COLOR(brandingBlue,         "#48D6FF", "#6045c5", "#48D6FF", "#6045c5")
+    DECLARE_QGC_COLOR(quaterniumPurple,     "#30002F", "#630261", "#30002F", "#630261")
 }
 
 void QGCPalette::setColorGroupEnabled(bool enabled)

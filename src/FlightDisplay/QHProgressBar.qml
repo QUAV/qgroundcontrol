@@ -36,8 +36,8 @@ ProgressBar {
 
     function getBarWidth() {
 
-        var defaultWidth = 20 * ScreenTools.smallFontPointSize
-        var maxWidth = getCustomWindowWidth()*0.32  //mainWindow.width * 0.07
+        var defaultWidth = 45 * ScreenTools.smallFontPointSize
+        var maxWidth = getCustomWindowWidth()*0.6  //mainWindow.width * 0.07
         return Math.min(maxWidth, defaultWidth)
     }
 

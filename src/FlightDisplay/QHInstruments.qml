@@ -45,7 +45,7 @@ Rectangle { //Item
 
     property int numberOfParameters: 6
     property int padding: 0
-    width:    getCustomWindowWidth()// size
+    width:    getCustomWindowWidth()*1.25
     height:   ScreenTools.defaultFontPixelHeight * (numberOfParameters + padding)
     radius:   ScreenTools.defaultFontPixelHeight*_radiusScale
 
@@ -57,8 +57,8 @@ Rectangle { //Item
     }
 
     function getBarWidth() {
-        var defaultWidth = 20 * ScreenTools.smallFontPointSize
-        var maxWidth = getCustomWindowWidth()*0.32  //mainWindow.width * 0.07
+        var defaultWidth = 45 * ScreenTools.smallFontPointSize
+        var maxWidth = getCustomWindowWidth()*0.6  //mainWindow.width * 0.07
         return Math.min(maxWidth, defaultWidth)
     }
 
@@ -96,7 +96,7 @@ Rectangle { //Item
                 Layout.column: 2
                 Layout.row: 1
                 text: (activeVehicle && activeVehicle.quaternium.voltage_battery.value != -1) ? (activeVehicle.quaternium.voltage_battery.valueString + " " + activeVehicle.quaternium.voltage_battery.units) : "N/A"
-                  font.pointSize: ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
+                font.pointSize:  ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize * 1.5
 
             }
 

@@ -56,6 +56,7 @@ QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 #define DEFAULT_LAT  38.965767f
 #define DEFAULT_LON -120.083923f
 #define GOVERNOR_REQUEST 198
+#define WARNING_CURRENT_DIFFERENCE 5
 
 const QString guided_mode_not_supported_by_vehicle = QObject::tr("Guided mode not supported by Vehicle.");
 
@@ -1603,8 +1604,8 @@ void Vehicle::_handleQuaterniumSystem(mavlink_command_long_t cmd)
 
     _currentDifference = gov_info->current_rotor - gov_info->current_generator;
 
-    if (_currentDifference > 0) {
-        if (_lastAnnouncedCurrentDifference > 0) {
+    if (_currentDifference > WARNING_CURRENT_DIFFERENCE) {
+        if (_lastAnnouncedCurrentDifference < WARNING_CURRENT_DIFFERENCE) {
             _insufficientGeneratedCurrent.start();
         }
         else if(_insufficientGeneratedCurrent.elapsed() > 10000 &&
@@ -1840,7 +1841,6 @@ void Vehicle::_handleHeartbeat(mavlink_message_t& message)
     if (message.compid != _defaultComponentId) {
         return;
     }
-
     mavlink_heartbeat_t heartbeat;
 
     mavlink_msg_heartbeat_decode(&message, &heartbeat);
