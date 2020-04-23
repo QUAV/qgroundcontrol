@@ -575,6 +575,9 @@ public:
     Q_PROPERTY(QmlObjectListModel*  cameraTriggerPoints     READ cameraTriggerPoints                                    CONSTANT)
     Q_PROPERTY(float                latitude                READ latitude                                               NOTIFY coordinateChanged)
     Q_PROPERTY(float                longitude               READ longitude                                              NOTIFY coordinateChanged)
+    Q_PROPERTY(float                retLatitude             READ retLatitude                                            CONSTANT)
+    Q_PROPERTY(float                retLongitude            READ retLongitude                                           CONSTANT)
+
     Q_PROPERTY(bool                 messageTypeNone         READ messageTypeNone                                        NOTIFY messageTypeChanged)
     Q_PROPERTY(bool                 messageTypeNormal       READ messageTypeNormal                                      NOTIFY messageTypeChanged)
     Q_PROPERTY(bool                 messageTypeWarning      READ messageTypeWarning                                     NOTIFY messageTypeChanged)
@@ -700,7 +703,6 @@ public:
     Q_PROPERTY(Fact* hobbs              READ hobbs              CONSTANT)
     Q_PROPERTY(Fact* throttlePct        READ throttlePct        CONSTANT)
     Q_PROPERTY(Fact* altitudeAGL        READ altitudeAGL        CONSTANT)
-
 
     Q_PROPERTY(FactGroup* gps               READ gpsFactGroup               CONSTANT)
     Q_PROPERTY(FactGroup* battery           READ battery1FactGroup          CONSTANT)
@@ -934,6 +936,9 @@ public:
     QString         latestError             () { return _latestError; }
     float           latitude                () { return static_cast<float>(_coordinate.latitude()); }
     float           longitude               () { return static_cast<float>(_coordinate.longitude()); }
+    float           retLatitude             () { return _retLatitude;}
+    float           retLongitude            () { return _retLongitude;}
+
     bool            mavPresent              () { return _mav != nullptr; }
     int             rcRSSI                  () { return _rcRSSI; }
     bool            px4Firmware             () const { return _firmwareType == MAV_AUTOPILOT_PX4; }
@@ -1131,8 +1136,12 @@ public:
     qreal       gimbalYaw               () { return static_cast<qreal>(_curGinmbalYaw); }
     bool        gimbalData              () { return _haveGimbalData; }
 
+    float           _retLatitude = 0.;
+    float           _retLongitude = 0.;
+
 public slots:
     void setVtolInFwdFlight             (bool vtolInFwdFlight);
+    void _fumigantLocationChanged       (float fLatitude, float fLongitude);
 
 signals:
     void allLinksInactive(Vehicle* vehicle);
@@ -1204,6 +1213,7 @@ signals:
     void sensorsHealthBitsChanged   (int sensorsHealthBits);
     void sensorsUnhealthyBitsChanged(int sensorsUnhealthyBits);
     void orbitActiveChanged         (bool orbitActive);
+
 
     void firmwareVersionChanged(void);
     void firmwareCustomVersionChanged(void);

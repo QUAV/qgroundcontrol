@@ -135,13 +135,24 @@ void MissionManager::generateResumeMission(int resumeIndex)
     bool addHomePosition = _vehicle->firmwarePlugin()->sendHomePositionToVehicle();
 
     int prefixCommandCount = 0;
+    bool firstWP = true;
+
     for (int i=0; i<_missionItems.count(); i++) {
         MissionItem* oldItem = _missionItems[i];
         if ((i == 0 && addHomePosition) || i >= resumeIndex || includedResumeCommands.contains(oldItem->command())) {
             if (i < resumeIndex) {
                 prefixCommandCount++;
             }
+
             MissionItem* newItem = new MissionItem(*oldItem, this);
+
+            /* Change the location of the first WP - instead of the previous visited WP, go to the location where RTL was activated */
+            if (firstWP == true && oldItem->command() == MAV_CMD_NAV_WAYPOINT && i >= resumeIndex){
+                newItem->setParam5(_vehicle->retLatitude());
+                newItem->setParam6(_vehicle->retLongitude());
+                firstWP = false;
+            }
+
             newItem->setIsCurrentItem(false);
             resumeMission.append(newItem);
         }
