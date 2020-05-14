@@ -509,7 +509,7 @@ void Vehicle::_commonInit(void)
     _addFact(&_headingToHomeFact,       _headingToHomeFactName);
     _addFact(&_distanceToGCSFact,       _distanceToGCSFactName);
     _addFact(&_throttlePctFact,         _throttlePctFactName);
-    _addFact(&_altitudeAGLFact,        _altitudeAGLFactName);
+    _addFact(&_altitudeAGLFact,         _altitudeAGLFactName);
 
     _hobbsFact.setRawValue(QVariant(QString("0000:00:00")));
     _addFact(&_hobbsFact,               _hobbsFactName);
@@ -2309,6 +2309,12 @@ void Vehicle::_handletextMessageReceived(UASMessage* message)
         _formatedMessage = message->getFormatedText();
         emit formatedMessageChanged();
     }
+}
+
+void Vehicle::_fumigantLocationChanged(float fLatitude, float fLongitude){
+    _retLatitude = fLatitude;
+    _retLongitude = fLongitude;
+    return;
 }
 
 void Vehicle::_handleTextMessage(int newCount)
