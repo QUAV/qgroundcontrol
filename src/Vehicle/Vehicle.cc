@@ -423,6 +423,9 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _vibrationFactGroup(this)
     , _clockFactGroup(this)
     , _distanceSensorFactGroup(this)
+    , _sprayerMissionActive(false)
+    , _alreadyReachedFirstWP(false)
+    , _takingoff(false)
 {
     _commonInit();
 
@@ -829,6 +832,9 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_OBSTACLE_DISTANCE:
         _handleObstacleDistance(message);
         break;
+    case MAVLINK_MSG_ID_MISSION_ITEM_REACHED:
+        _handleMissionItemReached(message);
+        break;
 
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
     {
@@ -936,6 +942,14 @@ void Vehicle::_handleStatusText(mavlink_message_t& message, bool longVersion)
         mavlink_msg_statustext_decode(&message, &statustext);
         strncpy(b.data(), statustext.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
         severity = statustext.severity;
+
+        if ( strcmp(statustext.text, "Mission: 1 Takeoff" ) == 0 ) {
+             _takingoff = true;
+        }
+        /*else if ( strcmp(statustext.text, "Disarming motors") == 0 && _takingoff == true ){
+            _takingoff = false;
+        }*/
+
     }
     b[b.length()-1] = '\0';
     messageText = QString(b);
@@ -1313,6 +1327,25 @@ void Vehicle::_handleTerrainReport(mavlink_message_t& message)
     else
         _altitudeAGLFact.setRawValue(-1);
 }
+
+void Vehicle::_handleMissionItemReached(const mavlink_message_t& message)
+{
+    mavlink_mission_item_reached_t item_reached;
+    mavlink_msg_mission_item_reached_decode(&message, &item_reached);
+
+    // Finished taking off - the next item reached will be WP
+    if ( _takingoff == true ){
+        _takingoff = false;
+        return;
+    }
+
+    // Reached first WP
+    if ( _alreadyReachedFirstWP == false ) {
+        _alreadyReachedFirstWP = true;
+    }
+    return;
+}
+
 
 void Vehicle::_setCapabilities(uint64_t capabilityBits)
 {
@@ -1728,6 +1761,14 @@ void Vehicle::_updateArmed(bool armed)
                     qgcApp()->toolbox()->videoManager()->videoReceiver()->stop();
                 }
             }
+
+            // Handle sprayer Mission
+            if ( _alreadyReachedFirstWP == true ){
+                _alreadyReachedFirstWP = false;
+            }
+            if ( _takingoff == true ){
+                _takingoff = false;
+            }
         }
     }
 }
@@ -1889,6 +1930,9 @@ void Vehicle::_handleRCChannels(mavlink_message_t& message)
 
     emit remoteControlRSSIChanged(channels.rssi);
     emit rcChannelsChanged(channels.chancount, pwmValues);
+
+    _sprayerMissionInputChanged(pwmValues[8]); // Channel 9 for enabling sprayer in Sprayer Mission
+    _sprayerMasterControllerChanged(pwmValues[8], pwmValues[9]);// Channel 10 for master controller
 }
 
 void Vehicle::_handleRCChannelsRaw(mavlink_message_t& message)
@@ -1934,6 +1978,9 @@ void Vehicle::_handleRCChannelsRaw(mavlink_message_t& message)
 
     emit remoteControlRSSIChanged(channels.rssi);
     emit rcChannelsChanged(channelCount, pwmValues);
+
+    _sprayerMissionInputChanged(pwmValues[8]);
+    _sprayerMasterControllerChanged(pwmValues[8], pwmValues[9]);// Channel 10 for master controller
 }
 
 void Vehicle::_handleScaledPressure(mavlink_message_t& message) {
@@ -2633,6 +2680,127 @@ void Vehicle::_flightTimerStop(void)
 void Vehicle::_updateFlightTime(void)
 {
     _flightTimeFact.setRawValue((double)_flightTimer.elapsed() / 1000.0);
+}
+
+void Vehicle::_sprayerMasterControllerChanged(int pwmSprayer, int pwmSprayerMaster){
+    if (pwmSprayerMaster > 1800 && _getSprayerStatus() == false && pwmSprayer < 1800 ){
+        _toggleSprayer();
+        sprayer = MASTER;
+    }
+
+    return;
+}
+
+void Vehicle::_sprayerMissionInputChanged(int pwmSprayer)
+{
+    if ( pwmSprayer > 1800 && _isInActivableState() == true ) {
+        sprayer = ACTIVATED;
+    }
+    else if ( pwmSprayer <= 1800 && sprayer == ACTIVATED ) {
+        sprayer = DISACTIVATED;
+        _sprayerController();
+    }
+    else if ( pwmSprayer > 1800 && sprayer == MASTER){
+        sprayer = DISACTIVATED;
+        _sprayerController();
+    }
+
+
+    if ( sprayer == ACTIVATED ) {
+        _sprayerController();
+    }
+
+    return;
+}
+
+
+bool Vehicle::_isInActivableState()
+{
+     if ( _alreadyReachedFirstWP == true && (sprayer == DISACTIVATED || ( sprayer == RTL && _isInRTL() == false )) ) {
+         // Sprayer can be activated only if it was manually disactivated or if RTL was interrupted
+         return true;
+     }
+     else {
+         return false;
+     }
+}
+
+void Vehicle::_sprayerController(void)
+{
+    bool sprayerEnabled = _getSprayerStatus();
+
+    if ( sprayerEnabled == true && _stopSprayingMission() ) {
+        _toggleSprayer();
+    }
+
+    else if ( sprayerEnabled == false && sprayer == ACTIVATED ) {
+        _toggleSprayer();
+    }
+
+    return;
+}
+
+bool Vehicle::_getSprayerStatus(void)
+{
+    QString param = _firmwarePlugin->sprayEnabledParameter(this);
+
+    if ( !param.isEmpty() && _parameterManager-> parameterExists(FactSystem::defaultComponentId, param) ){
+        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, param);
+        return fact->rawValue().toBool();
+    }
+
+    return false;
+}
+
+bool Vehicle::_stopSprayingMission(void)
+{
+    if ( _isSprayingPaused() || _isOutOfFumigant() || _isInRTL() )
+        return true;
+    else
+        return false;
+}
+
+bool Vehicle::_isSprayingPaused(void)
+{
+    if ( sprayer == DISACTIVATED ) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool Vehicle::_isOutOfFumigant(void)
+{
+    /* IF ( level of Fluid == LOW) {
+     * Send brake command brake
+     * sprayer = OUT_OF_FUMIGANT
+     * send warning that out of fumigant, stopping pumps, entering brake mode
+     */
+    return false;
+}
+
+bool Vehicle::_isInRTL(void)
+{
+    if ( _firmwarePlugin->isRTLMode(this) ) {
+        sprayer = RTL;
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+void Vehicle::_toggleSprayer(void)
+{
+    QString param = _firmwarePlugin->sprayEnabledParameter(this);
+
+    if ( !param.isEmpty() && _parameterManager-> parameterExists(FactSystem::defaultComponentId, param) ){
+        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, param);
+        fact->setRawValue(!fact->rawValue().toBool());
+    }
+
+    return;
 }
 
 void Vehicle::_startPlanRequest(void)
@@ -4202,6 +4370,7 @@ void Vehicle::_handleObstacleDistance(const mavlink_message_t& message)
     mavlink_msg_obstacle_distance_decode(&message, &o);
     _objectAvoidance->update(&o);
 }
+
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

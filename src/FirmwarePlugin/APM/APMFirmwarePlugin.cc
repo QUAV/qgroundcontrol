@@ -806,6 +806,11 @@ bool APMFirmwarePlugin::isGuidedMode(const Vehicle* vehicle) const
     return vehicle->flightMode() == "Guided";
 }
 
+bool APMFirmwarePlugin::isRTLMode(const Vehicle* vehicle) const
+{
+    return ( vehicle->flightMode() == "RTL" || vehicle->flightMode() == "Smart RTL" );
+}
+
 void APMFirmwarePlugin::_soloVideoHandshake(Vehicle* vehicle, bool originalSoloFirmware)
 {
     Q_UNUSED(vehicle);

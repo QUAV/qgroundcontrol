@@ -120,6 +120,9 @@ public:
     /// Returns whether the vehicle is in guided mode or not.
     virtual bool isGuidedMode(const Vehicle* vehicle) const;
 
+    /// Returns whether the vehicle is in RTL/Smart RTL mode or not.
+    virtual bool isRTLMode(const Vehicle* vehicle) const;
+
     /// Returns the flight mode which the vehicle will be in if it is performing a goto location
     virtual QString gotoFlightMode(void) const;
 
@@ -297,6 +300,9 @@ public:
 
     // Returns the parameter which control auto-disarm. Assume == 0 means no auto disarm
     virtual QString autoDisarmParameter(Vehicle* vehicle);
+
+    // Returns the parameter which controls sprayer. Assume == 0 means spraying disabled.
+    virtual QString sprayEnabledParameter(Vehicle* vehicle);
 
     /// Used to determine whether a vehicle has a gimbal.
     ///     @param[out] rollSupported Gimbal supports roll

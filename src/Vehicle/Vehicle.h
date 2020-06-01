@@ -1139,6 +1139,17 @@ public:
     float           _retLatitude = 0.;
     float           _retLongitude = 0.;
 
+    typedef enum
+    {
+       OUT_OF_FUMIGANT,
+       DISACTIVATED,
+       ACTIVATED,
+       RTL,
+       MASTER
+    } sprayer_status_t;
+
+    sprayer_status_t sprayer = DISACTIVATED;
+
 public slots:
     void setVtolInFwdFlight             (bool vtolInFwdFlight);
     void _fumigantLocationChanged       (float fLatitude, float fLongitude);
@@ -1321,6 +1332,7 @@ private:
     void _handleGlobalPositionInt(mavlink_message_t& message);
     void _handleAltitude(mavlink_message_t& message);
     void _handleTerrainReport(mavlink_message_t& message);
+    void _handleMissionItemReached(const mavlink_message_t& message);
     void _handleVfrHud(mavlink_message_t& message);
     void _handleScaledPressure(mavlink_message_t& message);
     void _handleScaledPressure2(mavlink_message_t& message);
@@ -1337,6 +1349,7 @@ private:
     void _handleMessageInterval(const mavlink_message_t& message);
     void _handleGimbalOrientation(const mavlink_message_t& message);
     void _handleObstacleDistance(const mavlink_message_t& message);
+
     // ArduPilot dialect messages
 #if !defined(NO_ARDUPILOT_DIALECT)
     void _handleCameraFeedback(const mavlink_message_t& message);
@@ -1368,6 +1381,16 @@ private:
     void _writeCsvLine();
     void _flightTimerStart(void);
     void _flightTimerStop(void);
+    void _sprayerMissionInputChanged(int);
+    void _sprayerMasterControllerChanged(int, int);
+    bool _isInActivableState();
+    void _sprayerController(void);
+    bool _stopSprayingMission(void);
+    bool _isSprayingPaused(void);
+    bool _isInRTL(void);
+    bool _isOutOfFumigant(void);
+    bool _getSprayerStatus(void);
+    void _toggleSprayer(void);
 
     int     _id;                    ///< Mavlink system id
     int     _defaultComponentId;
@@ -1445,6 +1468,7 @@ private:
         double      rgParam[7];
         bool        showError;
     } MavCommandQueueEntry_t;
+
 
     QList<MavCommandQueueEntry_t>   _mavCommandQueue;
     QTimer                          _mavCommandAckTimer;
@@ -1536,6 +1560,11 @@ private:
     quint64 _uid;
 
     int _lastAnnouncedLowBatteryPercent;
+
+    bool _sprayerMissionActive; // Spraying Mission Switch position
+    bool _alreadyReachedFirstWP;
+    bool _isTakeoffInMission;
+    bool _takingoff;
 
     SharedLinkInterfacePointer _priorityLink;  // We always keep a reference to the priority link to manage shutdown ordering
     bool _priorityLinkCommanded;

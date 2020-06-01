@@ -226,6 +226,13 @@ bool FirmwarePlugin::isGuidedMode(const Vehicle* vehicle) const
     return false;
 }
 
+bool FirmwarePlugin::isRTLMode(const Vehicle* vehicle) const
+{
+    // Not supported by generic vehicle
+    Q_UNUSED(vehicle);
+    return false;
+}
+
 void FirmwarePlugin::setGuidedMode(Vehicle* vehicle, bool guidedMode)
 {
     Q_UNUSED(vehicle);
@@ -769,6 +776,12 @@ void FirmwarePlugin::batteryConsumptionData(Vehicle* vehicle, int& mAhBattery, d
 }
 
 QString FirmwarePlugin::autoDisarmParameter(Vehicle* vehicle)
+{
+    Q_UNUSED(vehicle);
+    return QString();
+}
+
+QString FirmwarePlugin::sprayEnabledParameter(Vehicle* vehicle)
 {
     Q_UNUSED(vehicle);
     return QString();
