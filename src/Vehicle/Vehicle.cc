@@ -267,6 +267,10 @@ Vehicle::Vehicle(LinkInterface*             link,
     connect(_toolbox->uasMessageHandler(), &UASMessageHandler::textMessageCountChanged,  this, &Vehicle::_handleTextMessage);
     connect(_toolbox->uasMessageHandler(), &UASMessageHandler::textMessageReceived,      this, &Vehicle::_handletextMessageReceived);
 
+    // Connect sprayers
+    connect(this, &Vehicle::sprayerMissionInputChanged, this, &Vehicle::_sprayerMissionInputChanged);
+    connect(this, &Vehicle::sprayerMasterControllerChanged, this, &Vehicle::_sprayerMasterControllerChanged);
+
     if (_highLatencyLink || link->isPX4Flow()) {
         // These links don't request information
         _setMaxProtoVersion(100);
@@ -1931,8 +1935,8 @@ void Vehicle::_handleRCChannels(mavlink_message_t& message)
     emit remoteControlRSSIChanged(channels.rssi);
     emit rcChannelsChanged(channels.chancount, pwmValues);
 
-    _sprayerMissionInputChanged(pwmValues[8]); // Channel 9 for enabling sprayer in Sprayer Mission
-    _sprayerMasterControllerChanged(pwmValues[8], pwmValues[9]);// Channel 10 for master controller
+    emit sprayerMissionInputChanged(pwmValues[8]); // Channel 9 for enabling sprayer in Sprayer Mission
+    emit sprayerMasterControllerChanged(pwmValues[8], pwmValues[9]);// Channel 10 for master controller
 }
 
 void Vehicle::_handleRCChannelsRaw(mavlink_message_t& message)
@@ -1979,8 +1983,8 @@ void Vehicle::_handleRCChannelsRaw(mavlink_message_t& message)
     emit remoteControlRSSIChanged(channels.rssi);
     emit rcChannelsChanged(channelCount, pwmValues);
 
-    _sprayerMissionInputChanged(pwmValues[8]);
-    _sprayerMasterControllerChanged(pwmValues[8], pwmValues[9]);// Channel 10 for master controller
+    emit sprayerMissionInputChanged(pwmValues[8]);
+    emit sprayerMasterControllerChanged(pwmValues[8], pwmValues[9]);// Channel 10 for master controller
 }
 
 void Vehicle::_handleScaledPressure(mavlink_message_t& message) {
@@ -2700,11 +2704,6 @@ void Vehicle::_sprayerMissionInputChanged(int pwmSprayer)
         sprayer = DISACTIVATED;
         _sprayerController();
     }
-    else if ( pwmSprayer > 1800 && sprayer == MASTER){
-        sprayer = DISACTIVATED;
-        _sprayerController();
-    }
-
 
     if ( sprayer == ACTIVATED ) {
         _sprayerController();
@@ -2716,8 +2715,9 @@ void Vehicle::_sprayerMissionInputChanged(int pwmSprayer)
 
 bool Vehicle::_isInActivableState()
 {
-     if ( _alreadyReachedFirstWP == true && (sprayer == DISACTIVATED || ( sprayer == RTL && _isInRTL() == false )) ) {
-         // Sprayer can be activated only if it was manually disactivated or if RTL was interrupted
+    // Sprayer can be activated only if it was manually disactivated or if RTL was interrupted
+    // Its state has to be changed also if the master controller was already activated
+     if ( _alreadyReachedFirstWP == true && (sprayer == DISACTIVATED || ( sprayer == RTL && _isInRTL() == false ) || sprayer == MASTER ) ) {
          return true;
      }
      else {

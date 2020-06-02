@@ -1239,6 +1239,10 @@ signals:
     /// Remote control RSSI changed  (0% - 100%)
     void remoteControlRSSIChanged(uint8_t rssi);
 
+    /// Changed sprayer input
+    void sprayerMissionInputChanged (int);
+    void sprayerMasterControllerChanged(int, int);
+
     void mavlinkRawImu(mavlink_message_t message);
     void mavlinkScaledImu1(mavlink_message_t message);
     void mavlinkScaledImu2(mavlink_message_t message);
