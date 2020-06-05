@@ -124,11 +124,12 @@ Rectangle {
                     buttonText:         qsTr("MAVLink Console")
                     pageSource:         "MavlinkConsolePage.qml"
                 }
-                ListElement {
+                // MAVLink Inspector causes tablet to crash
+                /*ListElement {
                     buttonImage:        "/qmlimages/MAVLinkInspector"
                     buttonText:         qsTr("MAVLink Inspector")
                     pageSource:         "MAVLinkInspectorPage.qml"
-                }
+                }*/
             }
 
             Repeater {

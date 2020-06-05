@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# submodules_update: Initializes submodules and checks out to respective branches
+
+init_submodules() {
+	git submodule init
+	git submodule update --remote --merge
+}
+
+mavlink () {
+	path_mavlink="./libs/mavlink/include/mavlink/v2.0"  
+	
+	if [[ ! -d "${path_mavlink}" ]]; then
+		echo "Wrong MAVLink directory. Stopping execution." >&2
+		exit 1
+	fi
+
+	cd ${path_mavlink}
+	git checkout QH-Dev
+	cd "../../../../.."
+}
+
+gps () {
+	path_gps="src/GPS/Drivers"
+	
+	if [[ ! -d "${path_gps}" ]]; then
+		echo "Wrong GPS directory. Stopping execution." >&2
+		exit 1
+	fi
+
+	cd ${path_gps}
+	git checkout 781d4f1
+}
+
+init_submodules; mavlink ; gps
