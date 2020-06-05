@@ -1217,6 +1217,7 @@ public:
 
     float           _retLatitude = 0.;
     float           _retLongitude = 0.;
+    int             _silent_gov = 0;
 
 public slots:
     void setVtolInFwdFlight             (bool vtolInFwdFlight);
@@ -1439,7 +1440,7 @@ private:
     void _handleMavlinkLoggingDataAcked(mavlink_message_t& message);
     void _ackMavlinkLogData(uint16_t sequence);
     void _sendNextQueuedMavCommand(void);
-    void _requestDataFromGovernor(const int parameter_id);
+    void _requestDataFromGovernor(const int parameter_id, int stop);
     void _updatePriorityLink(bool updateActive, bool sendCommand);
     void _commonInit(void);
     void _startPlanRequest(void);

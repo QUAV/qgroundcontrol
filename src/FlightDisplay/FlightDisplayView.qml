@@ -234,7 +234,7 @@ Item {
                         QGCButton {
                             Layout.fillWidth:   true
                             Layout.alignment:   Qt.AlignHCenter
-                            text:               qsTr("Resume Mission From Waypoint %1").arg(_guidedController._resumeMissionIndex)
+                            text:               qsTr("Resume Mission from the RTL point")
 
                             onClicked: {
                                 guidedController.executeAction(_guidedController.actionResumeMission, null, null)
@@ -245,7 +245,7 @@ Item {
                         QGCLabel {
                             Layout.fillWidth:   true
                             wrapMode:           Text.WordWrap
-                            text:               qsTr("Resume Mission will rebuild the current mission from the last flown waypoint and upload it to the vehicle for the next flight.")
+                            text:               qsTr("Resume Mission will rebuild the current mission from the point where RTL was hit and upload it to the vehicle for the next flight.")
                         }
                     }
 

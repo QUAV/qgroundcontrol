@@ -269,8 +269,9 @@ Vehicle::Vehicle(LinkInterface*             link,
     // Request data from governor every second
     _mavCommandLongTimer.setInterval(1000);
     connect(&_mavCommandLongTimer, &QTimer::timeout, this, &Vehicle::_sendGovernorRequest);
-    _mavCommandLongTimer.start();
 
+    _mavCommandLongTimer.start();
+    _silent_gov = 0;
     _mav = uas();
 
     // Listen for system messages
@@ -3338,7 +3339,8 @@ void Vehicle::sendMavCommandInt(int component, MAV_CMD command, MAV_FRAME frame,
 
 void Vehicle::_sendGovernorRequest()
 {
-    _requestDataFromGovernor(GOVERNOR_REQUEST);
+    _requestDataFromGovernor(GOVERNOR_REQUEST, _silent_gov);
+
     return;
 }
 
@@ -3437,7 +3439,7 @@ void Vehicle::_sendNextQueuedMavCommand(void)
     }
 }
 
-void Vehicle::_requestDataFromGovernor(const int parameter_id ){
+void Vehicle::_requestDataFromGovernor(const int parameter_id, int stop){
     mavlink_command_long_t  cmd;
     mavlink_message_t       msg;
     memset(&cmd, 0, sizeof(cmd));
@@ -3446,7 +3448,7 @@ void Vehicle::_requestDataFromGovernor(const int parameter_id ){
     cmd.command =           MAV_CMD_REQUEST_MESSAGE;
     cmd.confirmation =      0;
     cmd.param1 =            parameter_id;
-    cmd.param2 =            0;
+    cmd.param2 =            stop;
     cmd.param3 =            0;
     cmd.param4 =            0;
     cmd.param5 =            0;

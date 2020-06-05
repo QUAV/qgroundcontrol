@@ -685,6 +685,7 @@ void PlanManager::_mavlinkMessageReceived(const mavlink_message_t& message)
 
     case MAVLINK_MSG_ID_MISSION_ACK:
         _handleMissionAck(message);
+        _vehicle->_silent_gov = 0;
         break;
     }
 }
