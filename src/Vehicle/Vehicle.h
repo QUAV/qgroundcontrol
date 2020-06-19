@@ -560,7 +560,6 @@ private:
     Fact            _efiCylTemperatureFact;
     Fact            _efiThrottlePositionFact;
     Fact            _efiBattFact;
-
 };
 
 
@@ -1630,8 +1629,12 @@ private:
 
     QTime   _lastInsufficientGeneratedCurrentAnnouncement;
     QTime   _insufficientGeneratedCurrent;
-    int     _currentDifference;
+    double  _currentDifference;
     int     _lastAnnouncedCurrentDifference;
+
+    int    _silentCounter = 0;
+    static const int _silentModeMaxRetryCount = 2;
+
 
     SharedLinkInterfacePointer _priorityLink;  // We always keep a reference to the priority link to manage shutdown ordering
     bool _priorityLinkCommanded;

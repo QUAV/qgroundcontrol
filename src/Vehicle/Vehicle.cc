@@ -271,7 +271,6 @@ Vehicle::Vehicle(LinkInterface*             link,
     connect(&_mavCommandLongTimer, &QTimer::timeout, this, &Vehicle::_sendGovernorRequest);
 
     _mavCommandLongTimer.start();
-    _silent_gov = 0;
     _mav = uas();
 
     // Listen for system messages
@@ -1603,7 +1602,7 @@ void Vehicle::_handleQuaterniumSystem(mavlink_command_long_t cmd)
 
     //-- Consumed current warning
 
-    _currentDifference = gov_info->current_rotor - gov_info->current_generator;
+    _currentDifference = ( static_cast<double>(gov_info->current_rotor) - static_cast<double>(gov_info->current_generator) ) / 10.0;
 
     if (_currentDifference > WARNING_CURRENT_DIFFERENCE) {
         if (_lastAnnouncedCurrentDifference < WARNING_CURRENT_DIFFERENCE) {
@@ -2736,6 +2735,11 @@ void Vehicle::_startPlanRequest(void)
     if (_parameterManager->parametersReady() && _vehicleCapabilitiesKnown && _mavlinkProtocolRequestComplete) {
         qCDebug(VehicleLog) << "_startPlanRequest";
         _missionManagerInitialRequestSent = true;
+
+        if (_silent_gov != -1){
+            _silent_gov = -1;
+        }
+
         if (_settingsManager->appSettings()->autoLoadMissions()->rawValue().toBool()) {
             QString missionAutoLoadDirPath = _settingsManager->appSettings()->missionSavePath();
             if (!missionAutoLoadDirPath.isEmpty()) {
@@ -2773,6 +2777,10 @@ void Vehicle::_missionLoadComplete(void)
             _geoFenceLoadComplete();
         }
     }
+
+    if (_silent_gov == -1){
+        _silent_gov = 0;
+    }
 }
 
 void Vehicle::_geoFenceLoadComplete(void)
@@ -2809,6 +2817,9 @@ void Vehicle::_parametersReady(bool parametersReady)
     if (parametersReady) {
         _setupAutoDisarmSignalling();
         _startPlanRequest();
+        if (_silent_gov == -1 && _initialPlanRequestComplete == true){
+            _silent_gov = 0;
+        }
     }
 }
 
@@ -3339,7 +3350,14 @@ void Vehicle::sendMavCommandInt(int component, MAV_CMD command, MAV_FRAME frame,
 
 void Vehicle::_sendGovernorRequest()
 {
+    if ( _silent_gov == -1 && _silentCounter++ > _silentModeMaxRetryCount ){
+          return;
+    }
+
     _requestDataFromGovernor(GOVERNOR_REQUEST, _silent_gov);
+
+    if ( _silentCounter != 0 && _silent_gov == 0 )
+         _silentCounter = 0;
 
     return;
 }

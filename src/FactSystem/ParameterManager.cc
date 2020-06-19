@@ -528,6 +528,10 @@ void ParameterManager::refreshAllParameters(uint8_t componentId)
                                              componentId);
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
 
+    if ( _vehicle->_silent_gov == 0 ){
+        _vehicle->_silent_gov = -1;
+    }
+
     QString what = (componentId == MAV_COMP_ID_ALL) ? "MAV_COMP_ID_ALL" : QString::number(componentId);
     qCDebug(ParameterManagerLog) << _logVehiclePrefix(-1) << "Request to refresh all parameters for component ID:" << what;
 }

@@ -236,7 +236,10 @@ void MissionController::_warnIfTerrainFrameUsed(void)
 
 void MissionController::sendToVehicle(void)
 {
-    _managerVehicle->_silent_gov = -1;
+    if ( _managerVehicle->_silent_gov != -1){
+        _managerVehicle->_silent_gov = -1;
+    }
+
     if (_masterController->offline()) {
         qCWarning(MissionControllerLog) << "MissionControllerLog::sendToVehicle called while offline";
     } else if (syncInProgress()) {
