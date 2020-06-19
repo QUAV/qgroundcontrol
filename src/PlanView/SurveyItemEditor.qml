@@ -118,7 +118,9 @@ Rectangle {
                     distanceToSurfaceLabel:         qsTr("Altitude")
                     distanceToSurfaceAltitudeMode:  missionItem.followTerrain ?
                                                         QGroundControl.AltitudeModeAboveTerrain :
-                                                        missionItem.cameraCalc.distanceToSurfaceRelative
+                                                        ( missionItem.followTerrainRadar ?
+                                                             QGroundControl.AltitudeModeTerrainFrame :
+                                                             missionItem.cameraCalc.distanceToSurfaceRelative )
                     frontalDistanceLabel:           qsTr("Trigger Dist")
                     sideDistanceLabel:              qsTr("Spacing")
                 }
@@ -196,13 +198,13 @@ Rectangle {
                             {
                                 text:       qsTr("Hover and capture image"),
                                 fact:       missionItem.hoverAndCapture,
-                                enabled:    !missionItem.followTerrain,
+                                enabled:    !missionItem.followTerrain && !missionItem.followTerrainRadar,
                                 visible:    missionItem.hoverAndCaptureAllowed
                             },
                             {
                                 text:       qsTr("Refly at 90 deg offset"),
                                 fact:       missionItem.refly90Degrees,
-                                enabled:    !missionItem.followTerrain,
+                                enabled:    !missionItem.followTerrain && !missionItem.followTerrainRadar,
                                 visible:    true
                             },
                             {
@@ -214,21 +216,34 @@ Rectangle {
                             {
                                 text:       qsTr("Fly alternate transects"),
                                 fact:       missionItem.flyAlternateTransects,
-                                enabled:    true,
+                                enabled:    !missionItem.followTerrainRadar,
                                 visible:    _vehicle ? (_vehicle.fixedWing || _vehicle.vtol) : false
                             },
                             {
                                 text:       qsTr("Relative altitude"),
-                                enabled:    missionItem.cameraCalc.isManualCamera && !missionItem.followTerrain,
+                                enabled:    missionItem.cameraCalc.isManualCamera && !missionItem.followTerrain && !missionItem.followTerrainRadar,
                                 visible:    QGroundControl.corePlugin.options.showMissionAbsoluteAltitude || (!missionItem.cameraCalc.distanceToSurfaceRelative && !missionItem.followTerrain),
                                 checked:    missionItem.cameraCalc.distanceToSurfaceRelative
+                            },
+                            {
+                                text:       qsTr("Terrain frame (radar)"),
+                                enabled:    !missionItem.followTerrain && !missionItem.cameraCalc.distanceToSurfaceRelative,
+                                visible:    QGroundControl.corePlugin.options.showMissionAbsoluteAltitude || (!missionItem.cameraCalc.distanceToSurfaceRelative && !missionItem.followTerrain),
+                                checked:    missionItem.followTerrainRadar
                             }
+
                         ]
 
                         onItemClicked: {
                             if (index == 4) {
                                 missionItem.cameraCalc.distanceToSurfaceRelative = !missionItem.cameraCalc.distanceToSurfaceRelative
                                 console.log(missionItem.cameraCalc.distanceToSurfaceRelative)
+
+                            }
+
+                            if (index == 5) {
+                                missionItem.followTerrainRadar = !missionItem.followTerrainRadar;
+                                console.log(missionItem.followTerrainRadar);
                             }
                         }
                     }
@@ -238,6 +253,7 @@ Rectangle {
                     id:             terrainHeader
                     anchors.left:   parent.left
                     anchors.right:  parent.right
+                    enabled:        !missionItem.followTerrain && !missionItem.followTerrainRadar
                     text:           qsTr("Terrain")
                     checked:        missionItem.followTerrain
                 }
@@ -246,7 +262,7 @@ Rectangle {
                     anchors.left:   parent.left
                     anchors.right:  parent.right
                     spacing:        _margin
-                    visible:        terrainHeader.checked
+                    visible:        terrainHeader.checked && !missionItem.followTerrainRadar
 
 
                     QGCCheckBox {
@@ -309,7 +325,9 @@ Rectangle {
                     distanceToSurfaceLabel:         qsTr("Altitude")
                     distanceToSurfaceAltitudeMode:  missionItem.followTerrain ?
                                                         QGroundControl.AltitudeModeAboveTerrain :
-                                                        missionItem.cameraCalc.distanceToSurfaceRelative
+                                                        ( missionItem.followTerrainRadar ?
+                                                             QGroundControl.AltitudeModeTerrainFrame :
+                                                             missionItem.cameraCalc.distanceToSurfaceRelative )
                     frontalDistanceLabel:           qsTr("Trigger Dist")
                     sideDistanceLabel:              qsTr("Spacing")
                 }

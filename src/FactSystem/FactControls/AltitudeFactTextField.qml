@@ -29,7 +29,7 @@ FactTextField {
             _altitudeModeExtraUnits = _altModeAbsoluteExtraUnits
         } else if (altitudeMode === QGroundControl.AltitudeModeAboveTerrain) {
             _altitudeModeExtraUnits = _altModeAboveTerrainExtraUnits
-        } else if (missionItem.altitudeMode === QGroundControl.AltitudeModeTerrainFrame) {
+        } else if (altitudeMode === QGroundControl.AltitudeModeTerrainFrame) {
             _altitudeModeExtraUnits = _altModeTerrainFrameExtraUnits
         } else {
             console.log("AltitudeFactTextField Internal error: Unknown altitudeMode", altitudeMode)

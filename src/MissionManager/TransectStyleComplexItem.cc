@@ -36,6 +36,7 @@ const char* TransectStyleComplexItem::_jsonVisualTransectPointsKey =        "Vis
 const char* TransectStyleComplexItem::_jsonItemsKey =                       "Items";
 const char* TransectStyleComplexItem::_jsonFollowTerrainKey =               "FollowTerrain";
 const char* TransectStyleComplexItem::_jsonCameraShotsKey =                 "CameraShots";
+const char* TransectStyleComplexItem::_jsonFollowTerrainRadarKey =          "FollowTerrainRadar";
 
 const int   TransectStyleComplexItem::_terrainQueryTimeoutMsecs =           1000;
 
@@ -48,6 +49,7 @@ TransectStyleComplexItem::TransectStyleComplexItem(Vehicle* vehicle, bool flyVie
     , _cameraShots                      (0)
     , _cameraCalc                       (vehicle, settingsGroup)
     , _followTerrain                    (false)
+    , _followTerrainRadar               (false)
     , _loadedMissionItemsParent         (nullptr)
     , _metaDataMap                      (FactMetaData::createMapFromJsonFile(QStringLiteral(":/json/TransectStyle.SettingsGroup.json"), this))
     , _turnAroundDistanceFact           (settingsGroup, _metaDataMap[_vehicle->multiRotor() ? turnAroundDistanceMultiRotorName : turnAroundDistanceName])
@@ -93,7 +95,6 @@ TransectStyleComplexItem::TransectStyleComplexItem(Vehicle* vehicle, bool flyVie
     connect(&_terrainAdjustMaxDescentRateFact,          &Fact::valueChanged,            this, &TransectStyleComplexItem::_setDirty);
     connect(&_terrainAdjustToleranceFact,               &Fact::valueChanged,            this, &TransectStyleComplexItem::_setDirty);
     connect(&_surveyAreaPolygon,                        &QGCMapPolygon::pathChanged,    this, &TransectStyleComplexItem::_setDirty);
-
     connect(&_surveyAreaPolygon,                        &QGCMapPolygon::dirtyChanged,   this, &TransectStyleComplexItem::_setIfDirty);
     connect(&_cameraCalc,                               &CameraCalc::dirtyChanged,      this, &TransectStyleComplexItem::_setIfDirty);
 
@@ -108,6 +109,9 @@ TransectStyleComplexItem::TransectStyleComplexItem(Vehicle* vehicle, bool flyVie
     connect(this,                                       &TransectStyleComplexItem::visualTransectPointsChanged, this, &TransectStyleComplexItem::greatestDistanceToChanged);
     connect(this,                                       &TransectStyleComplexItem::followTerrainChanged,        this, &TransectStyleComplexItem::_followTerrainChanged);
     connect(this,                                       &TransectStyleComplexItem::wizardModeChanged,           this, &TransectStyleComplexItem::readyForSaveStateChanged);
+
+    connect(this,                                       &TransectStyleComplexItem::followTerrainRadarChanged,   this, &TransectStyleComplexItem::_followTerrainRadarChanged);
+    connect(&_cameraCalc,                               &CameraCalc::isManualCameraChanged,                     this, &TransectStyleComplexItem::_updateTerrainRadar);
 
     connect(&_surveyAreaPolygon,                        &QGCMapPolygon::isValidChanged, this, &TransectStyleComplexItem::readyForSaveStateChanged);
 
@@ -155,6 +159,10 @@ void TransectStyleComplexItem::_save(QJsonObject& complexObject)
     QJsonObject cameraCalcObject;
     _cameraCalc.save(cameraCalcObject);
     innerObject[_jsonCameraCalcKey] = cameraCalcObject;
+
+    if(_followTerrainRadar) {
+        innerObject[_jsonFollowTerrainRadarKey] = _followTerrainRadar;
+    }
 
     QJsonValue  transectPointsJson;
 
@@ -218,6 +226,7 @@ bool TransectStyleComplexItem::_load(const QJsonObject& complexObject, bool forP
         { _jsonItemsKey,                    QJsonValue::Array,  !forPresets },
         { _jsonFollowTerrainKey,            QJsonValue::Bool,   true },
         { _jsonCameraShotsKey,              QJsonValue::Double, false },    // Not required since it was missing from initial implementation
+        { _jsonFollowTerrainRadarKey,       QJsonValue::Bool,   false },
     };
     if (!JsonHelper::validateKeys(innerObject, innerKeyInfoList, errorString)) {
         return false;
@@ -276,6 +285,10 @@ bool TransectStyleComplexItem::_load(const QJsonObject& complexObject, bool forP
         _terrainAdjustToleranceFact.setRawValue         (innerObject[terrainAdjustToleranceName].toDouble());
         _terrainAdjustMaxClimbRateFact.setRawValue      (innerObject[terrainAdjustMaxClimbRateName].toDouble());
         _terrainAdjustMaxDescentRateFact.setRawValue    (innerObject[terrainAdjustMaxDescentRateName].toDouble());
+    }
+
+    if (innerObject.contains(_jsonFollowTerrainRadarKey)){
+        _followTerrainRadar = (innerObject[_jsonFollowTerrainRadarKey].toBool());
     }
 
     return true;
@@ -773,6 +786,7 @@ void TransectStyleComplexItem::_followTerrainChanged(bool followTerrain)
     if (followTerrain) {
         _refly90DegreesFact.setRawValue(false);
         _hoverAndCaptureFact.setRawValue(false);
+        emit setFollowTerrainRadar(false);
     }
 }
 
@@ -781,5 +795,23 @@ void TransectStyleComplexItem::_handleHoverAndCaptureEnabled(QVariant enabled)
     if (enabled.toBool() && _cameraTriggerInTurnAroundFact.rawValue().toBool()) {
         qDebug() << "_handleHoverAndCaptureEnabled";
         _cameraTriggerInTurnAroundFact.setRawValue(false);
+    }
+}
+
+
+void TransectStyleComplexItem::_updateTerrainRadar()
+{
+    if (!_cameraCalc.isManualCamera() || _followTerrainRadar){
+        emit setFollowTerrainRadar(false);
+    }
+}
+
+void TransectStyleComplexItem::setFollowTerrainRadar(bool followTerrainRadar)
+{
+    if (followTerrainRadar != _followTerrainRadar) {
+        _refly90DegreesFact.setRawValue(false);
+        _hoverAndCaptureFact.setRawValue(false);
+        _followTerrainRadar = followTerrainRadar;
+        emit followTerrainRadarChanged(followTerrainRadar);
     }
 }

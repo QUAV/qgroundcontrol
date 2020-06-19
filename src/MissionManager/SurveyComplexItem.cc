@@ -58,6 +58,7 @@ const char* SurveyComplexItem::_jsonV3ManualGridKey =                   "manualG
 const char* SurveyComplexItem::_jsonV3CameraOrientationLandscapeKey =   "orientationLandscape";
 const char* SurveyComplexItem::_jsonV3FixedValueIsAltitudeKey =         "fixedValueIsAltitude";
 const char* SurveyComplexItem::_jsonV3Refly90DegreesKey =               "refly90Degrees";
+const char* SurveyComplexItem::_jsonV3FollowTerrainRadarKey =           "followTerrainRadar";
 const char* SurveyComplexItem::_jsonFlyAlternateTransectsKey =          "flyAlternateTransects";
 const char* SurveyComplexItem::_jsonSplitConcavePolygonsKey =           "splitConcavePolygons";
 
@@ -261,6 +262,7 @@ bool SurveyComplexItem::_loadV3(const QJsonObject& complexObject, int sequenceNu
         { _jsonV3FixedValueIsAltitudeKey,               QJsonValue::Bool,   true },
         { _jsonV3HoverAndCaptureKey,                    QJsonValue::Bool,   false },
         { _jsonV3Refly90DegreesKey,                     QJsonValue::Bool,   false },
+        { _jsonV3FollowTerrainRadarKey,                 QJsonValue::Bool,   false },
         { _jsonV3CameraTriggerInTurnaroundKey,          QJsonValue::Bool,   false },    // Should really be required, but it was missing from initial code due to bug
     };
     if (!JsonHelper::validateKeys(complexObject, mainKeyInfoList, errorString)) {
@@ -657,7 +659,8 @@ void SurveyComplexItem::_buildAndAppendMissionItems(QList<MissionItem*>& items, 
     bool addTriggerAtBeginning =    !hoverAndCaptureEnabled() && imagesEverywhere;
     bool firstOverallPoint =        true;
 
-    MAV_FRAME mavFrame = followTerrain() || !_cameraCalc.distanceToSurfaceRelative() ? MAV_FRAME_GLOBAL : MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    MAV_FRAME mavFrame = followTerrain() || !_cameraCalc.distanceToSurfaceRelative() ?
+                ( !followTerrainRadar() ? MAV_FRAME_GLOBAL : MAV_FRAME_GLOBAL_TERRAIN_ALT ) : MAV_FRAME_GLOBAL_RELATIVE_ALT ;
 
     for (const QList<TransectStyleComplexItem::CoordInfo_t>& transect: _transects) {
         bool transectEntry = true;

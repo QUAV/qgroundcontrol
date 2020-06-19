@@ -45,6 +45,9 @@ public:
     Q_PROPERTY(Fact*            terrainAdjustMaxDescentRate READ terrainAdjustMaxDescentRate                        CONSTANT)
     Q_PROPERTY(Fact*            terrainAdjustMaxClimbRate   READ terrainAdjustMaxClimbRate                          CONSTANT)
 
+    Q_PROPERTY(bool             followTerrainRadar          READ followTerrainRadar     WRITE setFollowTerrainRadar NOTIFY followTerrainRadarChanged)
+
+
     QGCMapPolygon*  surveyAreaPolygon   (void) { return &_surveyAreaPolygon; }
     CameraCalc*     cameraCalc          (void) { return &_cameraCalc; }
     QVariantList    visualTransectPoints(void) { return _visualTransectPoints; }
@@ -64,9 +67,12 @@ public:
     bool            hoverAndCaptureAllowed  (void) const;
     bool            followTerrain           (void) const { return _followTerrain; }
 
+    bool            followTerrainRadar      (void) const { return _followTerrainRadar; }
+
     virtual double  timeBetweenShots        (void) { return 0; } // Most be overridden. Implementation here is needed for unit testing.
 
     void setFollowTerrain(bool followTerrain);
+    void setFollowTerrainRadar(bool followTerrainRadar);
 
     double  triggerDistance         (void) const { return _cameraCalc.adjustedFootprintFrontal()->rawValue().toDouble(); }
     bool    hoverAndCaptureEnabled  (void) const { return hoverAndCapture()->rawValue().toBool(); }
@@ -120,6 +126,7 @@ public:
     static const char* terrainAdjustToleranceName;
     static const char* terrainAdjustMaxClimbRateName;
     static const char* terrainAdjustMaxDescentRateName;
+    static const char* followTerrainRadarName;
 
 signals:
     void cameraShotsChanged             (void);
@@ -127,6 +134,7 @@ signals:
     void visualTransectPointsChanged    (void);
     void coveredAreaChanged             (void);
     void followTerrainChanged           (bool followTerrain);
+    void followTerrainRadarChanged      (bool followTerrainRadar);
 
 protected slots:
     void _setDirty                          (void);
@@ -179,6 +187,7 @@ protected:
     double          _cruiseSpeed;
     CameraCalc      _cameraCalc;
     bool            _followTerrain;
+    bool            _followTerrainRadar;
 
     QObject*            _loadedMissionItemsParent;	///< Parent for all items in _loadedMissionItems for simpler delete
     QList<MissionItem*> _loadedMissionItems;		///< Mission items loaded from plan file
@@ -199,6 +208,7 @@ protected:
     static const char* _jsonItemsKey;
     static const char* _jsonFollowTerrainKey;
     static const char* _jsonCameraShotsKey;
+    static const char* _jsonFollowTerrainRadarKey;
 
     static const int _terrainQueryTimeoutMsecs;
 
@@ -206,6 +216,8 @@ private slots:
     void _reallyQueryTransectsPathHeightInfo(void);
     void _followTerrainChanged              (bool followTerrain);
     void _handleHoverAndCaptureEnabled      (QVariant enabled);
+    void _followTerrainRadarChanged         (void) {};
+    void _updateTerrainRadar                (void);
 
 private:
     void    _queryTransectsPathHeightInfo   (void);

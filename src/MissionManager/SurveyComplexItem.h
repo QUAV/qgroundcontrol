@@ -167,6 +167,7 @@ private:
     static const char* _jsonV3CameraOrientationLandscapeKey;
     static const char* _jsonV3FixedValueIsAltitudeKey;
     static const char* _jsonV3Refly90DegreesKey;
+    static const char* _jsonV3FollowTerrainRadarKey;
 
 
     static const int _hoverAndCaptureDelaySeconds = 4;
