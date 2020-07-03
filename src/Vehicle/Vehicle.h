@@ -1632,9 +1632,11 @@ private:
     double  _currentDifference;
     int     _lastAnnouncedCurrentDifference;
 
-    int    _silentCounter = 0;
-    static const int _silentModeMaxRetryCount = 2;
+    double  _lastAnnouncedTemperature;
+    QTime   _elevatedMotorTemperatureTimer;
+    QTime   _lastElevatedMotorTemperatureAnnouncement;
 
+    bool    _silentModeActive = false;
 
     SharedLinkInterfacePointer _priorityLink;  // We always keep a reference to the priority link to manage shutdown ordering
     bool _priorityLinkCommanded;

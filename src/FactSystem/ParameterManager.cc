@@ -151,6 +151,9 @@ void ParameterManager::_updateProgressBar(void)
         if (_readParamIndexProgressActive) {
             _readParamIndexProgressActive = false;
             _setLoadProgress(0.0);
+            if ( _vehicle->_silent_gov != 0 ){
+                _vehicle->_silent_gov = 0;
+            }
             return;
         }
     } else {
@@ -528,7 +531,7 @@ void ParameterManager::refreshAllParameters(uint8_t componentId)
                                              componentId);
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
 
-    if ( _vehicle->_silent_gov == 0 ){
+    if ( _vehicle->_silent_gov != -1 ){
         _vehicle->_silent_gov = -1;
     }
 

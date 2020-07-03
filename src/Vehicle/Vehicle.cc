@@ -57,6 +57,7 @@ QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 #define DEFAULT_LON -120.083923f
 #define GOVERNOR_REQUEST 198
 #define WARNING_CURRENT_DIFFERENCE 5
+#define WARNING_MOTOR_TEMPERATURE 210
 
 const QString guided_mode_not_supported_by_vehicle = QObject::tr("Guided mode not supported by Vehicle.");
 
@@ -195,6 +196,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _uid(0)
     , _lastAnnouncedLowBatteryPercent(100)
     , _lastAnnouncedCurrentDifference(1)
+    , _lastAnnouncedTemperature(1)
     , _priorityLinkCommanded(false)
     , _orbitActive(false)
     , _pidTuningTelemetryMode(false)
@@ -316,6 +318,7 @@ Vehicle::Vehicle(LinkInterface*             link,
 
     _lastBatteryAnnouncement.start();
     _lastInsufficientGeneratedCurrentAnnouncement.start();
+    _lastElevatedMotorTemperatureAnnouncement.start();
 }
 
 // Disconnected Vehicle for offline editing
@@ -407,6 +410,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _uid(0)
     , _lastAnnouncedLowBatteryPercent(100)
     , _lastAnnouncedCurrentDifference(1)
+    , _lastAnnouncedTemperature(1)
     , _orbitActive(false)
     , _pidTuningTelemetryMode(false)
     , _pidTuningWaitingForRates(false)
@@ -1599,7 +1603,6 @@ void Vehicle::_handleQuaterniumSystem(mavlink_command_long_t cmd)
         quaterniumFactGroup.efi_batt()->setRawValue(static_cast<double>(gov_info->efi_batt/10));
     }
 
-
     //-- Consumed current warning
 
     _currentDifference = ( static_cast<double>(gov_info->current_rotor) - static_cast<double>(gov_info->current_generator) ) / 10.0;
@@ -1615,6 +1618,22 @@ void Vehicle::_handleQuaterniumSystem(mavlink_command_long_t cmd)
         }
     }
     _lastAnnouncedCurrentDifference = _currentDifference;
+
+
+    //-- Motor temperature warning
+
+    if ( static_cast<double>(gov_info->efi_clt) / 10.0 > WARNING_MOTOR_TEMPERATURE ) {
+        if (_lastAnnouncedTemperature < WARNING_MOTOR_TEMPERATURE) {
+            _elevatedMotorTemperatureTimer.start();
+        }
+        else if(_elevatedMotorTemperatureTimer.elapsed() > 10000 &&
+                _lastElevatedMotorTemperatureAnnouncement.elapsed() > 30000) {
+            qgcApp()->showMessage(tr("Engine overheat: mission abort recommended"));
+            _say(tr("Engine overheat: mission abort recommended"));
+            _lastElevatedMotorTemperatureAnnouncement.start();
+        }
+    }
+    _lastAnnouncedTemperature = static_cast<double>(gov_info->efi_clt) / 10.0 ;
 
 }
 
@@ -2775,11 +2794,7 @@ void Vehicle::_missionLoadComplete(void)
         } else {
             qCDebug(VehicleLog) << "_missionLoadComplete GeoFence not supported skipping";
             _geoFenceLoadComplete();
-        }
-    }
-
-    if (_silent_gov == -1){
-        _silent_gov = 0;
+        }        
     }
 }
 
@@ -2804,6 +2819,10 @@ void Vehicle::_rallyPointLoadComplete(void)
     if (!_initialPlanRequestComplete) {
         _initialPlanRequestComplete = true;
         emit initialPlanRequestCompleteChanged(true);
+    }
+
+    if ( _silent_gov != 0 ){
+        _silent_gov = 0;
     }
 }
 
@@ -3350,14 +3369,11 @@ void Vehicle::sendMavCommandInt(int component, MAV_CMD command, MAV_FRAME frame,
 
 void Vehicle::_sendGovernorRequest()
 {
-    if ( _silent_gov == -1 && _silentCounter++ > _silentModeMaxRetryCount ){
-          return;
-    }
-
     _requestDataFromGovernor(GOVERNOR_REQUEST, _silent_gov);
 
-    if ( _silentCounter != 0 && _silent_gov == 0 )
-         _silentCounter = 0;
+    if ( (_silent_gov == 0 && _silentModeActive == true) || (_silent_gov == -1 && _silentModeActive == false) ){
+        _silentModeActive = !_silentModeActive;
+     }
 
     return;
 }

@@ -19,7 +19,7 @@ Rectangle {
 
     property bool _specifiesAltitude:       missionItem.specifiesAltitude
     property real _margin:                  ScreenTools.defaultFontPixelHeight / 2
-    property bool _supportsTerrainFrame:    missionItem
+    property bool _supportsTerrainFrame:    missionItem.supportsTerrainFrame
 
     property string _altModeRelativeHelpText:       qsTr("Altitude relative to home altitude")
     property string _altModeAbsoluteHelpText:       qsTr("Altitude above mean sea level")
@@ -214,7 +214,7 @@ Rectangle {
                                 text:           qsTr("Terrain Frame")
                                 checkable:      true
                                 checked:        missionItem.altitudeMode === QGroundControl.AltitudeModeTerrainFrame
-                                visible:        missionItem.altitudeMode === QGroundControl.AltitudeModeTerrainFrame
+                                visible:        _supportsTerrainFrame && (missionItem.specifiesCoordinate || missionItem.specifiesAltitudeOnly)
                                 onTriggered:    missionItem.altitudeMode = QGroundControl.AltitudeModeTerrainFrame
                             }
                         }

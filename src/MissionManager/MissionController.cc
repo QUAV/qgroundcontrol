@@ -218,7 +218,11 @@ void MissionController::loadFromVehicle(void)
     } else if (syncInProgress()) {
         qCWarning(MissionControllerLog) << "MissionControllerLog::loadFromVehicle called while syncInProgress";
     } else {
+        if ( _managerVehicle->_silent_gov != -1){
+            _managerVehicle->_silent_gov = -1;
+        }
         _itemsRequested = true;
+
         _managerVehicle->missionManager()->loadFromVehicle();
     }
 }
@@ -228,7 +232,7 @@ void MissionController::_warnIfTerrainFrameUsed(void)
     for (int i=1; i<_visualItems->count(); i++) {
         SimpleMissionItem* simpleItem = qobject_cast<SimpleMissionItem*>(_visualItems->get(i));
         if (simpleItem && simpleItem->altitudeMode() == QGroundControlQmlGlobal::AltitudeModeTerrainFrame) {
-            qgcApp()->showMessage(tr("Warning: You are using MAV_FRAME_GLOBAL_TERRAIN_ALT in a mission. %1 does not support sending terrain tiles to vehicle.").arg(qgcApp()->applicationName()));
+            qgcApp()->showMessage(tr("Warning: You are using MAV_FRAME_GLOBAL_TERRAIN_ALT in a mission."));
             break;
         }
     }
