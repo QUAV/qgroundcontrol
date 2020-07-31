@@ -298,6 +298,9 @@ public:
     // Returns the parameter which control auto-disarm. Assume == 0 means no auto disarm
     virtual QString autoDisarmParameter(Vehicle* vehicle);
 
+    // Returns the parameter which controls sprayer. Assume == 0 means spraying disabled.
+    virtual QString sprayEnabledParameter(Vehicle* vehicle);
+
     /// Used to determine whether a vehicle has a gimbal.
     ///     @param[out] rollSupported Gimbal supports roll
     ///     @param[out] pitchSupported Gimbal supports pitch

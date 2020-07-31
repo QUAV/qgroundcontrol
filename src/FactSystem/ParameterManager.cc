@@ -152,7 +152,7 @@ void ParameterManager::_updateProgressBar(void)
             _readParamIndexProgressActive = false;
             _setLoadProgress(0.0);
             if ( _vehicle->_silent_gov != 0 ){
-                _vehicle->_silent_gov = 0;
+                _vehicle->setSilentGovernor(0);
             }
             return;
         }
@@ -532,7 +532,7 @@ void ParameterManager::refreshAllParameters(uint8_t componentId)
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
 
     if ( _vehicle->_silent_gov != -1 ){
-        _vehicle->_silent_gov = -1;
+        _vehicle->setSilentGovernor(-1);
     }
 
     QString what = (componentId == MAV_COMP_ID_ALL) ? "MAV_COMP_ID_ALL" : QString::number(componentId);

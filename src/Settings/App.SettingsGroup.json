@@ -270,5 +270,19 @@
     "longDescription":  "If this option is enabled, all Facts will be written to a CSV file with a 1 Hertz frequency.",
     "type":             "bool",
     "defaultValue":     false
+},
+{
+    "name":             "enableRTLWhenEmpty",
+    "shortDescription": "Enable RTL when liquid tank is empty",
+    "longDescription":  "If this option is set, vehicle switches to RTL when liquid tank is empty",
+    "type":             "bool",
+    "defaultValue":     false
+},
+{
+    "name":             "disableSprayWhenEmpty",
+    "shortDescription": "Disable SPRAY_ENABLE when liquid tank is empty",
+    "longDescription":  "If this option is set, vehicle sets SPRAY_ENABLE to 0 when liquid tank is empty",
+    "type":             "bool",
+    "defaultValue":     false
 }
 ]

@@ -38,6 +38,7 @@ class QGCCameraManager;
 class Joystick;
 class VehicleObjectAvoidance;
 class TrajectoryPoints;
+class SprayerManager;
 
 #if defined(QGC_AIRMAP_ENABLED)
 class AirspaceVehicleManager;
@@ -719,6 +720,7 @@ public:
     Q_PROPERTY(qreal                gimbalPitch             READ gimbalPitch                                            NOTIFY gimbalPitchChanged)
     Q_PROPERTY(qreal                gimbalYaw               READ gimbalYaw                                              NOTIFY gimbalYawChanged)
     Q_PROPERTY(bool                 gimbalData              READ gimbalData                                             NOTIFY gimbalDataChanged)
+    Q_PROPERTY(bool                 alreadyReachedFirstWP   READ alreadyReachedFirstWP                                  NOTIFY alreadyReachedFirstWPChanged)
 
     // The following properties relate to Orbit status
     Q_PROPERTY(bool             orbitActive     READ orbitActive        NOTIFY orbitActiveChanged)
@@ -1013,9 +1015,6 @@ public:
     QString         latestError             () { return _latestError; }
     float           latitude                () { return static_cast<float>(_coordinate.latitude()); }
     float           longitude               () { return static_cast<float>(_coordinate.longitude()); }
-    float           retLatitude             () { return _retLatitude;}
-    float           retLongitude            () { return _retLongitude;}
-
     bool            mavPresent              () { return _mav != nullptr; }
     int             rcRSSI                  () { return _rcRSSI; }
     bool            px4Firmware             () const { return _firmwareType == MAV_AUTOPILOT_PX4; }
@@ -1063,6 +1062,12 @@ public:
     bool            highLatencyLink         () const { return _highLatencyLink; }
     bool            orbitActive             () const { return _orbitActive; }
     QGCMapCircle*   orbitMapCircle          () { return &_orbitMapCircle; }
+
+    int             silentGov               () const { return _silent_gov; }
+    void            setSilentGovernor       (const int);
+    float           retLatitude             () const { return _retLatitude; }
+    float           retLongitude            () const { return _retLongitude; }
+    bool            alreadyReachedFirstWP   () const { return _alreadyReachedFirstWP; }
 
     /// Get the maximum MAVLink protocol version supported
     /// @return the maximum version
@@ -1217,6 +1222,7 @@ public:
     float           _retLatitude = 0.;
     float           _retLongitude = 0.;
     int             _silent_gov = 0;
+    bool            _silentModeActive = false;
 
 public slots:
     void setVtolInFwdFlight             (bool vtolInFwdFlight);
@@ -1261,6 +1267,7 @@ signals:
     void linksChanged(void);
     void linksPropertiesChanged(void);
     void textMessageReceived(int uasid, int componentid, int severity, QString text);
+    void alreadyReachedFirstWPChanged(bool _alreadyReachedFirstWP);
 
     void messagesReceivedChanged    ();
     void messagesSentChanged        ();
@@ -1307,6 +1314,10 @@ signals:
 
     /// Remote control RSSI changed  (0% - 100%)
     void remoteControlRSSIChanged(uint8_t rssi);
+
+    /// Changed sprayer input
+    void rcSprayerChanged(const int);
+    void handleFumigantLevelSensor(const mavlink_message_t& message);
 
     void mavlinkRawImu(mavlink_message_t message);
     void mavlinkScaledImu1(mavlink_message_t message);
@@ -1422,6 +1433,7 @@ private:
     void _handleMessageInterval(const mavlink_message_t& message);
     void _handleGimbalOrientation(const mavlink_message_t& message);
     void _handleObstacleDistance(const mavlink_message_t& message);
+    void _handleMissionItemReached(const mavlink_message_t& message);
     // ArduPilot dialect messages
 #if !defined(NO_ARDUPILOT_DIALECT)
     void _handleCameraFeedback(const mavlink_message_t& message);
@@ -1454,6 +1466,8 @@ private:
     void _writeCsvLine();
     void _flightTimerStart(void);
     void _flightTimerStop(void);
+
+    SprayerManager* _sprayerManager;
 
     int     _id;                    ///< Mavlink system id
     int     _defaultComponentId;
@@ -1636,7 +1650,8 @@ private:
     QTime   _elevatedMotorTemperatureTimer;
     QTime   _lastElevatedMotorTemperatureAnnouncement;
 
-    bool    _silentModeActive = false;
+    bool    _alreadyReachedFirstWP;
+    bool    _takingoff;
 
     SharedLinkInterfacePointer _priorityLink;  // We always keep a reference to the priority link to manage shutdown ordering
     bool _priorityLinkCommanded;

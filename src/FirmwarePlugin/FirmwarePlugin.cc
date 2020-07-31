@@ -773,6 +773,12 @@ QString FirmwarePlugin::autoDisarmParameter(Vehicle* vehicle)
     return QString();
 }
 
+QString FirmwarePlugin::sprayEnabledParameter(Vehicle* vehicle)
+{
+    Q_UNUSED(vehicle);
+    return QString();
+}
+
 bool FirmwarePlugin::hasGimbal(Vehicle* vehicle, bool& rollSupported, bool& pitchSupported, bool& yawSupported)
 {
     Q_UNUSED(vehicle);

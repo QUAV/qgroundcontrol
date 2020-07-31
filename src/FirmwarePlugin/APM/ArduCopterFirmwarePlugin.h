@@ -70,6 +70,7 @@ public:
     QString followFlightMode                    (void) const override { return QStringLiteral("Follow"); }
     bool    vehicleYawsToNextWaypointInMission  (const Vehicle* vehicle) const override;
     QString autoDisarmParameter                 (Vehicle* vehicle) override { Q_UNUSED(vehicle); return QStringLiteral("DISARM_DELAY"); }
+    QString sprayEnabledParameter               (Vehicle* vehicle) override { Q_UNUSED(vehicle); return QStringLiteral("SPRAY_ENABLE"); }
     bool    supportsSmartRTL                    (void) const override { return true; }
     void    sendGCSMotionReport                 (Vehicle* vehicle, FollowMe::GCSMotionReport& motionReport, uint8_t estimatationCapabilities) override;
 

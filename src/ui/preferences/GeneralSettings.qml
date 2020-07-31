@@ -43,6 +43,8 @@ Rectangle {
     property Fact _followTarget:                QGroundControl.settingsManager.appSettings.followTarget
     property real _panelWidth:                  _root.width * _internalWidthRatio
     property real _margins:                     ScreenTools.defaultFontPixelWidth
+    property Fact _enableRTLWhenEmpty:          QGroundControl.settingsManager.appSettings.enableRTLWhenEmpty
+    property Fact _disableSprayWhenEmpty:       QGroundControl.settingsManager.appSettings.disableSprayWhenEmpty
 
     property string _videoSource:               QGroundControl.settingsManager.videoSettings.videoSource.value
     property bool   _isGst:                     QGroundControl.videoManager.isGStreamer
@@ -1106,6 +1108,43 @@ Rectangle {
                             }
                         }
                     }
+
+
+                    Item { width: 1; height: _margins }
+                    QGCLabel {
+                        id:         quaterniumSectionLabel
+                        text:       qsTr("Quaternium")
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: quaterniumCol.height + (_margins * 2)
+                        Layout.preferredWidth:  quaterniumCol.width + (_margins * 2)
+                        color:                  qgcPal.windowShade
+                        Layout.fillWidth:       true
+                        ColumnLayout {
+                            id:                         quaterniumCol
+                            anchors.margins:            _margins
+                            anchors.top:                parent.top
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                            spacing:                    _margins * 1.5
+
+                            FactCheckBox {
+                                id:         enableRTLWhenEmpty
+                                text:       qsTr("RTL when empty")
+                                checked:    false
+                                enabled:    activeVehicle
+                                fact:       _enableRTLWhenEmpty
+                            }
+
+                            FactCheckBox {
+                                id:         disableSprayWhenEmpty
+                                text:       qsTr("Disable spray when tank is empty")
+                                checked:    false
+                                enabled:    activeVehicle
+                                fact:       _disableSprayWhenEmpty
+                            }
+                        }
+                    }
+
 
                     Item { width: 1; height: _margins }
 

@@ -219,7 +219,7 @@ void MissionController::loadFromVehicle(void)
         qCWarning(MissionControllerLog) << "MissionControllerLog::loadFromVehicle called while syncInProgress";
     } else {
         if ( _managerVehicle->_silent_gov != -1){
-            _managerVehicle->_silent_gov = -1;
+            _managerVehicle->setSilentGovernor(-1);
         }
         _itemsRequested = true;
 
@@ -241,7 +241,7 @@ void MissionController::_warnIfTerrainFrameUsed(void)
 void MissionController::sendToVehicle(void)
 {
     if ( _managerVehicle->_silent_gov != -1){
-        _managerVehicle->_silent_gov = -1;
+        _managerVehicle->setSilentGovernor(-1);
     }
 
     if (_masterController->offline()) {

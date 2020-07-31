@@ -196,7 +196,7 @@ Item {
 
         // If turned the RTL mode on, add location where it took place
         if (_vehicleInRTLMode){
-            _activeVehicle._fumigantLocationChanged(_activeVehicle.latitude, _activeVehicle.longitude);
+            _activeVehicle.fumigantLocationChanged(_activeVehicle.latitude, _activeVehicle.longitude);
         }
 
         _outputState()

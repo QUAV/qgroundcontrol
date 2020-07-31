@@ -149,7 +149,7 @@ exists ($$PWD/.git) {
     } else {
         # development version "Development branch:sha date"
         GIT_VERSION = "Quaternium Development $${GIT_BRANCH}:$${GIT_HASH} $${GIT_TIME}"
-        VERSION     = 1.0.4
+        VERSION     = 1.0.5
     }
 
     MacBuild {

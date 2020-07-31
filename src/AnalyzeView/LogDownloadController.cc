@@ -239,6 +239,7 @@ LogDownloadController::_receivedAllEntries()
 {
     _timer.stop();
     _setListing(false);
+    _vehicle->setSilentGovernor(0);
 }
 
 //----------------------------------------------------------------------------------------
@@ -406,6 +407,7 @@ LogDownloadController::_receivedAllData()
         _requestLogData(_downloadData->ID, 0, _downloadData->chunk_table.size()*MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN);
         _timer.start(kTimeOutMilliseconds);
     } else {
+        _vehicle->setSilentGovernor(0);
         _resetSelection();
         _setDownloading(false);
     }
@@ -484,6 +486,7 @@ LogDownloadController::_requestLogList(uint32_t start, uint32_t end)
 {
     if(_vehicle && _uas) {
         qCDebug(LogDownloadLog) << "Request log entry list (" << start << "through" << end << ")";
+        _vehicle->setSilentGovernor(-1);
         _setListing(true);
         mavlink_message_t msg;
         mavlink_msg_log_request_list_pack_chan(
@@ -546,6 +549,7 @@ void LogDownloadController::downloadToDirectory(const QString& dir)
             }
         }
         //-- Start download process
+        _vehicle->setSilentGovernor(-1);
         _setDownloading(true);
         _receivedAllData();
     }
@@ -693,6 +697,7 @@ LogDownloadController::cancel(void)
         delete _downloadData;
         _downloadData = 0;
     }
+    _vehicle->setSilentGovernor(0);
     _resetSelection(true);
     _setDownloading(false);
 }

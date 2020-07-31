@@ -45,6 +45,7 @@
 #include "VehicleObjectAvoidance.h"
 #include "TrajectoryPoints.h"
 #include "QGCGeo.h"
+#include "Sprayer/SprayerManager.h"
 
 #if defined(QGC_AIRMAP_ENABLED)
 #include "AirspaceVehicleManager.h"
@@ -232,6 +233,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _distanceSensorFactGroup(this)
     , _estimatorStatusFactGroup(this)
     , _quaterniumFactGroup(this)
+
 {
     connect(_joystickManager, &JoystickManager::activeJoystickChanged, this, &Vehicle::_loadSettings);
     connect(qgcApp()->toolbox()->multiVehicleManager(), &MultiVehicleManager::activeVehicleAvailableChanged, this, &Vehicle::_loadSettings);
@@ -441,6 +443,8 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _vibrationFactGroup(this)
     , _clockFactGroup(this)
     , _distanceSensorFactGroup(this)
+    , _alreadyReachedFirstWP(false)
+    , _takingoff(false)
 {
     _commonInit();
 
@@ -865,7 +869,14 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_WIND:
         _handleWind(message);
         break;
-#endif
+#endif        
+    case MAVLINK_MSG_ID_MISSION_ITEM_REACHED:
+        // _handleMissionItemReached(message);
+        break;
+
+    case MAVLINK_MSG_ID_BUTTON_CHANGE:
+        emit handleFumigantLevelSensor(message);
+        break;
     }
 
     // This must be emitted after the vehicle processes the message. This way the vehicle state is up to date when anyone else
@@ -955,7 +966,12 @@ void Vehicle::_handleStatusText(mavlink_message_t& message, bool longVersion)
         mavlink_msg_statustext_decode(&message, &statustext);
         strncpy(b.data(), statustext.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
         severity = statustext.severity;
+
+        /*if ( strcmp(statustext.text, "Mission: 1 Takeoff" ) == 0 ) {
+             _takingoff = true;
+        }*/
     }
+
     b[b.length()-1] = '\0';
     messageText = QString(b);
 
@@ -1834,6 +1850,17 @@ void Vehicle::_updateArmed(bool armed)
                     qgcApp()->toolbox()->videoManager()->videoReceiver()->stop();
                 }
             }
+
+            // Handle sprayer Mission
+            /*
+            if ( _alreadyReachedFirstWP == true ){
+                _alreadyReachedFirstWP = false; // should be false
+            }
+            if ( _takingoff == true ){
+                _takingoff = false;
+            }
+
+            sprayerManager->setStatus(SprayerManager::DISACTIVATED);*/
         }
     }
 }
@@ -1994,6 +2021,8 @@ void Vehicle::_handleRCChannels(mavlink_message_t& message)
 
     emit remoteControlRSSIChanged(channels.rssi);
     emit rcChannelsChanged(channels.chancount, pwmValues);
+
+    //emit rcSprayerChanged(pwmValues[8]);// Channel 9 for sprayer control
 }
 
 void Vehicle::_handleRCChannelsRaw(mavlink_message_t& message)
@@ -2039,6 +2068,8 @@ void Vehicle::_handleRCChannelsRaw(mavlink_message_t& message)
 
     emit remoteControlRSSIChanged(channels.rssi);
     emit rcChannelsChanged(channelCount, pwmValues);
+
+    //emit rcSprayerChanged(pwmValues[8]);// Channel 9 for master controller
 }
 
 void Vehicle::_handleScaledPressure(mavlink_message_t& message) {
@@ -3369,13 +3400,21 @@ void Vehicle::sendMavCommandInt(int component, MAV_CMD command, MAV_FRAME frame,
 
 void Vehicle::_sendGovernorRequest()
 {
-    _requestDataFromGovernor(GOVERNOR_REQUEST, _silent_gov);
-
-    if ( (_silent_gov == 0 && _silentModeActive == true) || (_silent_gov == -1 && _silentModeActive == false) ){
-        _silentModeActive = !_silentModeActive;
+     if ( _silent_gov == -1 && _silentModeActive == true ){
+          return;
      }
 
-    return;
+     _requestDataFromGovernor(GOVERNOR_REQUEST, _silent_gov);
+
+     if ( (_silent_gov == 0 && _silentModeActive == true) || (_silent_gov == -1 && _silentModeActive == false) ){
+         _silentModeActive = !_silentModeActive;
+      }
+}
+
+void Vehicle::setSilentGovernor(const int silent_gov)
+{
+    if (_silent_gov != silent_gov)
+        _silent_gov = silent_gov;
 }
 
 void Vehicle::_sendMavCommandAgain(void)
@@ -4725,4 +4764,25 @@ VehicleQuaterniumFactGroup::VehicleQuaterniumFactGroup(QObject* parent)
     _efiCylTemperatureFact.setRawValue      (_efiCylTemperatureUnavailable);
     _efiThrottlePositionFact.setRawValue    (_efiThrottlePositionUnavailable);
     _efiBattFact.setRawValue                (_efiBattUnavailable);
+}
+
+void Vehicle::_handleMissionItemReached(const mavlink_message_t& message)
+{
+    mavlink_mission_item_reached_t item_reached;
+    mavlink_msg_mission_item_reached_decode(&message, &item_reached);
+
+    // Finished taking off - the next item reached will be WP
+    if ( _takingoff == true ){
+        qDebug() << "Finished taking off";
+        _takingoff = false;
+        return;
+    }
+
+    // Reached first WP
+    if ( _alreadyReachedFirstWP == false ) {
+        _alreadyReachedFirstWP = true;
+        qDebug() << "Reached first WP";
+        emit alreadyReachedFirstWPChanged(_alreadyReachedFirstWP);
+    }
+    return;
 }

@@ -578,7 +578,8 @@ void PlanManager::_handleMissionRequest(const mavlink_message_t& message, bool m
 
 void PlanManager::_handleMissionAck(const mavlink_message_t& message)
 {
-    if ( _vehicle->_silent_gov != 0 ) _vehicle->_silent_gov = 0;
+    if ( _vehicle->_silent_gov != 0 )
+        _vehicle->setSilentGovernor(0);
 
     mavlink_mission_ack_t missionAck;
     
@@ -827,7 +828,7 @@ void PlanManager::_finishTransaction(bool success, bool apmGuidedItemWrite)
     _itemIndicesToRead.clear();
     _itemIndicesToWrite.clear();
 
-    _vehicle->_silent_gov = 0;
+    _vehicle->setSilentGovernor(0);
 
     // First thing we do is clear the transaction. This way inProgesss is off when we signal transaction complete.
     TransactionType_t currentTransactionType = _transactionInProgress;

@@ -34,6 +34,7 @@ class QGCCorePlugin;
 class SettingsManager;
 class AirspaceManager;
 class ADSBVehicleManager;
+class SprayerManager;
 #if defined(QGC_ENABLE_PAIRING)
 class PairingManager;
 #endif
@@ -69,6 +70,7 @@ public:
     SettingsManager*            settingsManager         () { return _settingsManager; }
     AirspaceManager*            airspaceManager         () { return _airspaceManager; }
     ADSBVehicleManager*         adsbVehicleManager      () { return _adsbVehicleManager; }
+    SprayerManager*             sprayerManager          () { return _sprayerManager; }
 #if defined(QGC_ENABLE_PAIRING)
     PairingManager*             pairingManager          () { return _pairingManager; }
 #endif
@@ -109,6 +111,7 @@ private:
     SettingsManager*            _settingsManager        = nullptr;
     AirspaceManager*            _airspaceManager        = nullptr;
     ADSBVehicleManager*         _adsbVehicleManager     = nullptr;
+    SprayerManager*             _sprayerManager         = nullptr;
 #if defined(QGC_ENABLE_PAIRING)
     PairingManager*             _pairingManager         = nullptr;
 #endif

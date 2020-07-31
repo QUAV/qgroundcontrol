@@ -267,6 +267,11 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     } else {
         // Determine if upgrade message for settings version bump is required. Check and clear must happen before toolbox is started since
         // that will write some settings.
+
+        // Start QGC with agriculture options always off.
+        settings.setValue("enableRTLWhenEmpty", false);
+        settings.setValue("disableSprayWhenEmpty", false);
+
         if (settings.contains(_settingsVersionKey)) {
             if (settings.value(_settingsVersionKey).toInt() != QGC_SETTINGS_VERSION) {
                 settings.clear();
